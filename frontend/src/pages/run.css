@@ -1,0 +1,340 @@
+/* Run Page Styles */
+.run-page {
+  min-height: calc(100vh - 80px);
+  background-color: #f9fafb;
+  padding: 3rem 2rem;
+}
+
+.run-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.run-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.run-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #0a0a0a;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.run-subtitle {
+  font-size: 1.125rem;
+  color: #6b7280;
+}
+
+.run-content {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+}
+
+/* Section Titles */
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0a0a0a;
+  margin-bottom: 1.5rem;
+}
+
+/* Upload Section */
+.upload-section {
+  margin-bottom: 2.5rem;
+}
+
+.upload-area {
+  border: 2px dashed #e5e7eb;
+  border-radius: 8px;
+  padding: 3rem 2rem;
+  text-align: center;
+  transition: all 0.2s ease;
+  background-color: #fafbfc;
+}
+
+.upload-area:hover {
+  border-color: #0052ff;
+  background-color: #f0f7ff;
+}
+
+.upload-area.drag-active {
+  border-color: #0052ff;
+  background-color: #f0f7ff;
+}
+
+.file-input {
+  display: none;
+}
+
+.upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+}
+
+.upload-icon {
+  width: 48px;
+  height: 48px;
+  color: #0052ff;
+  margin-bottom: 1rem;
+}
+
+.upload-text {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #0a0a0a;
+  margin-bottom: 0.5rem;
+}
+
+.upload-subtext {
+  font-size: 1rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.upload-formats {
+  font-size: 0.875rem;
+  color: #9ca3af;
+}
+
+/* Files List */
+.files-list {
+  margin-top: 1.5rem;
+}
+
+.files-list-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0a0a0a;
+  margin-bottom: 1rem;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+}
+
+.file-icon {
+  width: 20px;
+  height: 20px;
+  color: #0052ff;
+  margin-right: 0.75rem;
+  flex-shrink: 0;
+}
+
+.file-name {
+  flex: 1;
+  font-size: 0.875rem;
+  color: #0a0a0a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-size {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0 1rem;
+}
+
+.file-remove {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.file-remove:hover {
+  background-color: #fee2e2;
+  color: #ef4444;
+}
+
+/* Configuration Section */
+.config-section {
+  margin-bottom: 2.5rem;
+  padding-bottom: 2.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.config-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.config-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.config-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0a0a0a;
+  margin-bottom: 0.5rem;
+}
+
+.config-select {
+  padding: 0.625rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 1rem;
+  color: #0a0a0a;
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.config-select:hover {
+  border-color: #0052ff;
+}
+
+.config-select:focus {
+  outline: none;
+  border-color: #0052ff;
+  box-shadow: 0 0 0 3px rgba(0, 82, 255, 0.1);
+}
+
+/* Status Section */
+.status-section {
+  margin-bottom: 2rem;
+  padding: 1rem 1.5rem;
+  background-color: #f0f7ff;
+  border-radius: 8px;
+  border: 1px solid #dbeafe;
+}
+
+.status-content {
+  display: flex;
+}
+/* Spinning animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+/* Status icon styles */
+.status-icon {
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.status-icon.success {
+  color: #10b981;
+}
+
+.status-icon.error {
+  color: #ef4444;
+}
+
+.status-content {
+  display: flex;
+  align-items: center;
+}
+
+.status-text {
+  font-size: 0.875rem;
+  color: #0a0a0a;
+}
+
+/* Action Section */
+.action-section {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+/* Button styles */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  background-color: #0052ff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 140px;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #0041cc;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 82, 255, 0.3);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary.loading {
+  cursor: wait;
+}
+
+/* Button icon */
+.btn-icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+}
+
+.btn-icon.spinning {
+  animation: spin 1s linear infinite;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  background-color: transparent;
+  color: #6b7280;
+  border: 1.5px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 140px;
+}
+
+.btn-secondary:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+  color: #374151;
+}
