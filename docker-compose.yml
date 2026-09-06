@@ -1,0 +1,32 @@
+services:
+  aquadex-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: aquadex_backend
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./backend/app:/app/app
+      - ./.edna_data/in:/data/in
+      - ./.edna_data/out:/data/out
+      - ./.edna_data/db:/data/db
+      - ./.edna_data/tmp:/data/tmp
+      - ./.edna_data/models:/app/models
+    environment:
+      DATA_IN: /data/in
+      DATA_OUT: /data/out
+      DATA_DB: /data/db
+      DATA_TMP: /data/tmp
+      DEMO_MODE: "false"
+      KRAKEN2_DB: /data/db/kraken2/16S_Greengenes_k2db
+      DNABERT_MODEL: /app/models/dnabert-s
+      ARTIFACT_BASE_URL: /api/artifacts
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

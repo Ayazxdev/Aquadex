@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: edna-backend
+    env: docker
+    rootDir: backend
+    dockerfilePath: Dockerfile
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /health
+    numInstances: 1
+    region: oregon
+    envVars:
+      - key: DATA_IN
+        value: /data/in
+      - key: DATA_OUT
+        value: /data/out
+      - key: DATA_DB
+        value: /data/db
+      - key: DATA_TMP
+        value: /data/tmp
+      - key: ARTIFACT_BASE_URL
+        value: /api/artifacts
+
