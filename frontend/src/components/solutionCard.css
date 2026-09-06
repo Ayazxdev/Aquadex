@@ -1,0 +1,243 @@
+/* Solution Card Styles */
+.solution-section {
+  padding: 6rem 2rem;
+  background-color: #ffffff;
+}
+
+.solution-card {
+  max-width: 1100px;
+  margin: 0 auto;
+  background: rgba(240, 247, 255, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 82, 255, 0.1);
+  border-radius: 20px;
+  padding: 3rem;
+  box-shadow: 0 10px 40px rgba(0, 82, 255, 0.08);
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.solution-card.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.solution-content {
+  display: grid;
+  grid-template-columns: 7fr 5fr;
+  gap: 3rem;
+  align-items: center;
+}
+
+/* Text Content */
+.solution-text {
+  padding-right: 2rem;
+}
+
+.solution-title {
+  font-size: clamp(2rem, 3.5vw, 2.5rem);
+  font-weight: 800;
+  color: #0A0A0A;
+  margin-bottom: 1rem;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.solution-subtitle {
+  font-size: 1.125rem;
+  color: #6B7280;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+/* Bullets */
+.solution-bullets {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 2rem 0;
+}
+
+.solution-bullet-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.bullet-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  background-color: #0052FF;
+  border-radius: 50%;
+  margin-top: 0.5rem;
+}
+
+/* Actions */
+.solution-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.solution-cta {
+  background-color: #0052FF;
+  color: #ffffff;
+  padding: 0.875rem 2rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(0, 82, 255, 0.25);
+}
+
+.solution-cta:hover {
+  background-color: #0041CC;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 82, 255, 0.35);
+}
+
+.btn-secondary {
+  background: none;
+  border: none;
+  color: #0052FF;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  transition: all 0.2s ease;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.btn-secondary:hover {
+  color: #0041CC;
+  text-decoration-thickness: 2px;
+}
+
+/* Image Container */
+.solution-image-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.solution-image-wrapper {
+  width: 100%;
+  max-width: 480px;
+  transform-style: preserve-3d;
+  transition: transform 0.3s ease;
+}
+
+.solution-image-wrapper:hover {
+  transform: scale(1.02) rotateY(2deg);
+}
+
+.solution-image {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 82, 255, 0.1);
+}
+
+/* Staggered animations */
+.solution-card.visible .animate-item {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.solution-card.visible .animate-item:nth-child(1) { animation-delay: 0.1s; }
+.solution-card.visible .animate-item:nth-child(2) { animation-delay: 0.2s; }
+.solution-card.visible .animate-item:nth-child(3) { animation-delay: 0.3s; }
+.solution-card.visible .animate-item:nth-child(4) { animation-delay: 0.4s; }
+.solution-card.visible .animate-item:nth-child(5) { animation-delay: 0.5s; }
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 968px) {
+  .solution-content {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .solution-text {
+    padding-right: 0;
+    text-align: center;
+  }
+
+  .solution-bullets {
+    text-align: left;
+    max-width: 600px;
+    margin: 0 auto 2rem;
+  }
+
+  .solution-actions {
+    justify-content: center;
+  }
+
+  .solution-image-container {
+    order: -1; /* Image on top on mobile */
+  }
+
+  .solution-card {
+    padding: 2rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .solution-section {
+    padding: 4rem 1rem;
+  }
+
+  .solution-title {
+    font-size: 1.75rem;
+  }
+
+  .solution-subtitle {
+    font-size: 1rem;
+  }
+
+  .solution-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .solution-cta,
+  .btn-secondary {
+    width: 100%;
+    text-align: center;
+  }
+
+  .solution-card {
+    padding: 1.5rem;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .solution-card,
+  .solution-image-wrapper,
+  .animate-item {
+    animation: none !important;
+    transition: opacity 0.3s ease !important;
+  }
+  
+  .solution-card.visible {
+    transform: none;
+  }
+}
