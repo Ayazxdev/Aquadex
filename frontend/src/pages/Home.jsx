@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import Typewriter from 'typewriter-effect';
-import SolutionCard from '../components/SolutionCard';
+import SolutionCard from '../components/solutionCard';
 import WhyChoose from '../components/WhyChoose';
 import FeaturesSection from '../components/FeaturesSection';
 import Footer from '../components/Footer';
