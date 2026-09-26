@@ -295,15 +295,6 @@ const FeaturesSection = ({ onNavigate }) => {
               );
             })}
           </div>
-
-          <div className="features-cta">
-            <button 
-              className="btn-explore-all"
-              onClick={() => onNavigate && onNavigate('tools')}
-            >
-              Explore all tools
-            </button>
-          </div>
         </div>
       </section>
 

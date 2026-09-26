@@ -969,14 +969,14 @@ const Results = ({ currentRunId }) => {
         {/* Sub-navigation Tabs */}
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", borderBottom: "1px solid #e2e8f0", paddingBottom: "10px" }}>
           {[
-            { id: "pcoa", label: "🗺️ PCoA Ordination" },
-            { id: "inference", label: "🔬 PERMANOVA & PERMDISP" },
-            { id: "phylo", label: "🌿 Phylogenetic Diversity & UniFrac" },
-            { id: "coverage", label: "📊 Sample Coverage & Rarefaction" },
-            { id: "differential", label: "⚡ Differential Abundance (ANCOM-BC2)" },
-            { id: "occupancy", label: "🎯 Detection & Occupancy Model" },
-            { id: "heatmap", label: "🌡️ Distance Heatmap" },
-            { id: "umap", label: "🧬 Genomic Latent Space (UMAP)" },
+            { id: "pcoa", label: "PCoA Ordination" },
+            { id: "inference", label: "PERMANOVA & PERMDISP" },
+            { id: "phylo", label: "Phylogenetic Diversity & UniFrac" },
+            { id: "coverage", label: "Sample Coverage & Rarefaction" },
+            { id: "differential", label: "Differential Abundance (ANCOM-BC2)" },
+            { id: "occupancy", label: "Detection & Occupancy Model" },
+            { id: "heatmap", label: "Distance Heatmap" },
+            { id: "umap", label: "Genomic Latent Space (UMAP)" },
           ].map(tab => (
             <button
               key={tab.id}
@@ -1602,7 +1602,7 @@ const Results = ({ currentRunId }) => {
                     color: umapColorMode === "novelty" ? "#ffffff" : "#64748b"
                   }}
                 >
-                  🌟 Novelty Gradient (AI)
+                  Novelty Gradient (AI)
                 </button>
                 <button
                   onClick={() => setUmapColorMode("taxonomy")}
@@ -1618,7 +1618,7 @@ const Results = ({ currentRunId }) => {
                     color: umapColorMode === "taxonomy" ? "#ffffff" : "#64748b"
                   }}
                 >
-                  🌿 Taxonomic Phylum
+                  Taxonomic Phylum
                 </button>
                 <button
                   onClick={() => setUmapColorMode("cluster")}
@@ -1634,7 +1634,7 @@ const Results = ({ currentRunId }) => {
                     color: umapColorMode === "cluster" ? "#ffffff" : "#64748b"
                   }}
                 >
-                  🔬 HDBSCAN Clusters
+                  HDBSCAN Clusters
                 </button>
               </div>
             </div>
@@ -1946,7 +1946,7 @@ const Results = ({ currentRunId }) => {
                   color: taxViewMode === "sunburst" ? "#ffffff" : "#64748b"
                 }}
               >
-                📊 Sunburst Hierarchy
+                Sunburst Hierarchy
               </button>
               <button
                 onClick={() => setTaxViewMode("evidence")}
@@ -1961,7 +1961,7 @@ const Results = ({ currentRunId }) => {
                   color: taxViewMode === "evidence" ? "#ffffff" : "#64748b"
                 }}
               >
-                🔬 Evidence Chain &amp; Confidence
+                Evidence Chain &amp; Confidence
               </button>
             </div>
           </div>
