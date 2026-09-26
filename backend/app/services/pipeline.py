@@ -181,8 +181,9 @@ def _real_runner(run_id: str, marker: str, read_type: str, options: dict):
 
 
 # ───────────────────────── DEMO pipeline ───────────────────────────
-def _inspect_uploaded_file(inp: Path) -> dict:
-    """Analyze the uploaded file to extract real QC stats and sample name."""
+# ───────────────────────── DEMO pipeline ───────────────────────────
+def _inspect_uploaded_files(inp: Path) -> List[dict]:
+    """Analyze all uploaded files to extract real QC stats and sample names."""
     files = sorted(inp.glob("*.*"))
     valid_files = [
         f for f in files 
@@ -190,7 +191,7 @@ def _inspect_uploaded_file(inp: Path) -> dict:
     ]
     
     if not valid_files:
-        return {
+        return [{
             "sample_name": "Sample_1",
             "total_reads": 125000,
             "avg_length": 150,
@@ -198,69 +199,72 @@ def _inspect_uploaded_file(inp: Path) -> dict:
             "q20_rate": 0.96,
             "q30_rate": 0.91,
             "file_name": "sample.fastq.gz"
-        }
+        }]
     
-    primary = valid_files[0]
-    sample_name = primary.name
-    for ext in [".fastq.gz", ".fq.gz", ".fasta.gz", ".fa.gz", ".fastq", ".fq", ".fasta", ".fa", ".gz"]:
-        if sample_name.lower().endswith(ext):
-            sample_name = sample_name[:-len(ext)]
-            break
-
-    total_reads = 0
-    total_bases = 0
-    gc_count = 0
-    q20_count = 0
-    q30_count = 0
-    is_fastq = any(primary.name.lower().endswith(ext) for ext in [".fastq", ".fq", ".fastq.gz", ".fq.gz"])
-    
+    results = []
     import gzip
-    opener = gzip.open if primary.name.lower().endswith(".gz") else open
-    
-    try:
-        with opener(str(primary), "rt", encoding="utf-8", errors="ignore") as fh:
-            line_idx = 0
-            for line in fh:
-                line_idx += 1
-                if is_fastq:
-                    if line_idx % 4 == 2:
-                        seq = line.strip().upper()
-                        total_reads += 1
-                        total_bases += len(seq)
-                        gc_count += seq.count("G") + seq.count("C")
-                    elif line_idx % 4 == 0:
-                        qual = line.strip()
-                        for ch in qual:
-                            q = ord(ch) - 33
-                            if q >= 20: q20_count += 1
-                            if q >= 30: q30_count += 1
-                else:
-                    if not line.startswith(">"):
-                        seq = line.strip().upper()
-                        total_reads += 1
-                        total_bases += len(seq)
-                        gc_count += seq.count("G") + seq.count("C")
-                if total_reads >= 4000:
-                    break
-    except Exception as e:
-        logger.warning(f"Error inspecting uploaded file {primary}: {e}")
+    for primary in valid_files:
+        sample_name = primary.name
+        for ext in [".fastq.gz", ".fq.gz", ".fasta.gz", ".fa.gz", ".fastq", ".fq", ".fasta", ".fa", ".gz"]:
+            if sample_name.lower().endswith(ext):
+                sample_name = sample_name[:-len(ext)]
+                break
 
-    file_size = primary.stat().st_size
-    estimated_reads = max(total_reads, int(file_size / 240)) if is_fastq else max(total_reads, int(file_size / 120))
-    avg_len = int(total_bases / total_reads) if total_reads > 0 else 150
-    gc_rate = round(gc_count / total_bases, 4) if total_bases > 0 else 0.49
-    q20 = round(q20_count / total_bases, 4) if total_bases > 0 and is_fastq else 0.97
-    q30 = round(q30_count / total_bases, 4) if total_bases > 0 and is_fastq else 0.92
+        total_reads = 0
+        total_bases = 0
+        gc_count = 0
+        q20_count = 0
+        q30_count = 0
+        is_fastq = any(primary.name.lower().endswith(ext) for ext in [".fastq", ".fq", ".fastq.gz", ".fq.gz"])
+        
+        opener = gzip.open if primary.name.lower().endswith(".gz") else open
+        
+        try:
+            with opener(str(primary), "rt", encoding="utf-8", errors="ignore") as fh:
+                line_idx = 0
+                for line in fh:
+                    line_idx += 1
+                    if is_fastq:
+                        if line_idx % 4 == 2:
+                            seq = line.strip().upper()
+                            total_reads += 1
+                            total_bases += len(seq)
+                            gc_count += seq.count("G") + seq.count("C")
+                        elif line_idx % 4 == 0:
+                            qual = line.strip()
+                            for ch in qual:
+                                q = ord(ch) - 33
+                                if q >= 20: q20_count += 1
+                                if q >= 30: q30_count += 1
+                    else:
+                        if not line.startswith(">"):
+                            seq = line.strip().upper()
+                            total_reads += 1
+                            total_bases += len(seq)
+                            gc_count += seq.count("G") + seq.count("C")
+                    if total_reads >= 4000:
+                        break
+        except Exception as e:
+            logger.warning(f"Error inspecting uploaded file {primary}: {e}")
 
-    return {
-        "sample_name": sample_name,
-        "total_reads": estimated_reads,
-        "avg_length": avg_len,
-        "gc_content": gc_rate,
-        "q20_rate": q20,
-        "q30_rate": q30,
-        "file_name": primary.name
-    }
+        file_size = primary.stat().st_size
+        estimated_reads = max(total_reads, int(file_size / 240)) if is_fastq else max(total_reads, int(file_size / 120))
+        avg_len = int(total_bases / total_reads) if total_reads > 0 else 150
+        gc_rate = round(gc_count / total_bases, 4) if total_bases > 0 else 0.49
+        q20 = round(q20_count / total_bases, 4) if total_bases > 0 and is_fastq else 0.97
+        q30 = round(q30_count / total_bases, 4) if total_bases > 0 and is_fastq else 0.92
+
+        results.append({
+            "sample_name": sample_name,
+            "total_reads": estimated_reads,
+            "avg_length": avg_len,
+            "gc_content": gc_rate,
+            "q20_rate": q20,
+            "q30_rate": q30,
+            "file_name": primary.name
+        })
+
+    return results
 
 
 def _demo_runner(run_id: str, marker: str, read_type: str, options: dict):
@@ -295,16 +299,16 @@ def _demo_runner(run_id: str, marker: str, read_type: str, options: dict):
 
 
 def _create_demo_outputs(run_id: str, marker: str = "18S", read_type: str = "short"):
-    """Create realistic synthetic pipeline outputs matching the uploaded sample."""
+    """Create realistic synthetic pipeline outputs matching all uploaded samples dynamically."""
     od = out_dir(run_id)
     inp = in_dir(run_id)
 
-    # Analyze actual uploaded file
-    file_info = _inspect_uploaded_file(inp)
-    sample_name = file_info["sample_name"]
-    total_reads = file_info["total_reads"]
-    q20 = file_info["q20_rate"]
-    q30 = file_info["q30_rate"]
+    # Analyze all actual uploaded files dynamically
+    all_files_info = _inspect_uploaded_files(inp)
+    primary_info = all_files_info[0]
+    total_reads = sum(f["total_reads"] for f in all_files_info)
+    q20 = primary_info["q20_rate"]
+    q30 = primary_info["q30_rate"]
     passed_reads = int(total_reads * 0.95)
     low_qual = int(total_reads * 0.035)
     too_short = int(total_reads * 0.015)
@@ -316,17 +320,17 @@ def _create_demo_outputs(run_id: str, marker: str = "18S", read_type: str = "sho
         "summary": {
             "before_filtering": {
                 "total_reads": total_reads,
-                "total_bases": total_reads * file_info["avg_length"],
+                "total_bases": total_reads * primary_info["avg_length"],
                 "q20_rate": q20 - 0.03,
                 "q30_rate": q30 - 0.05,
-                "gc_content": file_info["gc_content"]
+                "gc_content": primary_info["gc_content"]
             },
             "after_filtering": {
                 "total_reads": passed_reads,
-                "total_bases": passed_reads * file_info["avg_length"],
+                "total_bases": passed_reads * primary_info["avg_length"],
                 "q20_rate": q20,
                 "q30_rate": q30,
-                "gc_content": file_info["gc_content"]
+                "gc_content": primary_info["gc_content"]
             },
         },
         "filtering_result": {
@@ -337,67 +341,51 @@ def _create_demo_outputs(run_id: str, marker: str = "18S", read_type: str = "sho
     }
     (qc_dir / "fastp_report.json").write_text(json.dumps(fastp_json, indent=2))
 
-    # ── Taxonomy (Marker-Specific) ──
+    # ── Taxonomy (Marker-Specific for N Uploaded Samples) ──
     tax_dir = od / "taxonomy"
     tax_dir.mkdir(parents=True, exist_ok=True)
 
     marker_upper = (marker or "18S").upper()
-    if "18S" in marker_upper:
-        # Authentic 18S eukaryotic eDNA community (Marine Protists, Algae, Ciliates, Metazoa)
-        tax_rows_primary = [
-            "ASV_ID\ttaxon\tabundance",
-            "ASV_001\tk__Eukaryota;p__Dinoflagellata;c__Dinophyceae;o__Gymnodiniales;f__Gymnodiniaceae;g__Gymnodinium\t1420",
-            "ASV_002\tk__Eukaryota;p__Bacillariophyta;c__Bacillariophyceae;o__Naviculales;f__Naviculaceae;g__Navicula\t1180",
-            "ASV_003\tk__Eukaryota;p__Chlorophyta;c__Mamiellophyceae;o__Mamiellales;f__Mamiellaceae;g__Micromonas\t950",
-            "ASV_004\tk__Eukaryota;p__Ciliophora;c__Spirotrichea;o__Choreotrichida;f__Tintinnidiidae;g__Tintinnidium\t780",
-            "ASV_005\tk__Eukaryota;p__Haptophyta;c__Prymnesiophyceae;o__Isochrysidales;f__Noelaerhabdaceae;g__Emiliania\t690",
-            "ASV_006\tk__Eukaryota;p__Ochrophyta;c__Pelagophyceae;o__Pelagomonadales;f__Pelagomonadaceae;g__Pelagomonas\t540",
-            "ASV_007\tk__Eukaryota;p__Arthropoda;c__Copepoda;o__Calanoida;f__Calanidae;g__Calanus\t480",
-            "ASV_008\tk__Eukaryota;p__Cnidaria;c__Hydrozoa;o__Siphonophorae;f__Diphyidae;g__Diphyes\t410",
-            "ASV_009\tk__Eukaryota;p__Bacillariophyta;c__Mediophyceae;o__Thalassiosirales;f__Thalassiosiraceae;g__Thalassiosira\t360",
-            "ASV_010\tk__Eukaryota;p__Dinoflagellata;c__Dinophyceae;o__Suessiales;f__Symbiodiniaceae;g__Symbiodinium\t310",
-            "ASV_011\tk__Eukaryota;p__Ascomycota;c__Saccharomycetes;o__Saccharomycetales;f__Saccharomycetaceae;g__Candida\t260",
-            "ASV_012\tUnclassified Marine Eukaryote ASV\t220",
-        ]
-        tax_rows_ctrl = [
-            "ASV_ID\ttaxon\tabundance",
-            "ASV_001\tk__Eukaryota;p__Dinoflagellata;c__Dinophyceae;o__Gymnodiniales;f__Gymnodiniaceae;g__Gymnodinium\t890",
-            "ASV_002\tk__Eukaryota;p__Bacillariophyta;c__Bacillariophyceae;o__Naviculales;f__Naviculaceae;g__Navicula\t1340",
-            "ASV_003\tk__Eukaryota;p__Chlorophyta;c__Mamiellophyceae;o__Mamiellales;f__Mamiellaceae;g__Micromonas\t610",
-            "ASV_005\tk__Eukaryota;p__Haptophyta;c__Prymnesiophyceae;o__Isochrysidales;f__Noelaerhabdaceae;g__Emiliania\t820",
-            "ASV_007\tk__Eukaryota;p__Arthropoda;c__Copepoda;o__Calanoida;f__Calanidae;g__Calanus\t650",
-            "ASV_008\tk__Eukaryota;p__Cnidaria;c__Hydrozoa;o__Siphonophorae;f__Diphyidae;g__Diphyes\t320",
-            "ASV_012\tUnclassified Marine Eukaryote ASV\t180",
-        ]
-    else:
-        # Authentic 16S marine bacterial community
-        tax_rows_primary = [
-            "ASV_ID\ttaxon\tabundance",
-            "ASV_001\tk__Bacteria;p__Proteobacteria;c__Gammaproteobacteria;o__Alteromonadales;f__Alteromonadaceae;g__Alteromonas\t1350",
-            "ASV_002\tk__Bacteria;p__Bacteroidetes;c__Flavobacteriia;o__Flavobacteriales;f__Flavobacteriaceae;g__Flavobacterium\t1120",
-            "ASV_003\tk__Bacteria;p__Cyanobacteria;c__Cyanophyceae;o__Synechococcales;f__Synechococcaceae;g__Synechococcus\t890",
-            "ASV_004\tk__Bacteria;p__Proteobacteria;c__Alphaproteobacteria;o__Pelagibacterales;f__Pelagibacteraceae;g__Pelagibacter\t760",
-            "ASV_005\tk__Bacteria;p__Firmicutes;c__Bacilli;o__Bacillales;f__Bacillaceae;g__Bacillus\t620",
-            "ASV_006\tk__Bacteria;p__Actinobacteria;c__Acidimicrobiia;o__Acidimicrobiales;f__Microtrichaceae;g__Ilumatobacter\t510",
-            "ASV_007\tk__Bacteria;p__Planctomycetes;c__Planctomycetia;o__Pirellulales;f__Pirellulaceae;g__Blastopirellula\t430",
-            "ASV_008\tk__Bacteria;p__Verrucomicrobia;c__Verrucomicrobiae;o__Verrucomicrobiales;f__Verrucomicrobiaceae;g__Rubritalea\t380",
-            "ASV_009\tk__Bacteria;p__Proteobacteria;c__Deltaproteobacteria;o__Desulfobacterales;f__Desulfobacteraceae;g__Desulfobacter\t320",
-            "ASV_010\tk__Bacteria;p__Chloroflexi;c__Anaerolineae;o__Anaerolineales;f__Anaerolineaceae;g__Anaerolinea\t270",
-            "ASV_011\tk__Bacteria;p__Acidobacteria;c__Vicinamibacteria;o__Vicinamibacterales;f__Vicinamibacteraceae;g__Luteitalea\t230",
-            "ASV_012\tUnclassified Marine Bacterium\t190",
-        ]
-        tax_rows_ctrl = [
-            "ASV_ID\ttaxon\tabundance",
-            "ASV_001\tk__Bacteria;p__Proteobacteria;c__Gammaproteobacteria;o__Alteromonadales;f__Alteromonadaceae;g__Alteromonas\t920",
-            "ASV_002\tk__Bacteria;p__Bacteroidetes;c__Flavobacteriia;o__Flavobacteriales;f__Flavobacteriaceae;g__Flavobacterium\t1280",
-            "ASV_003\tk__Bacteria;p__Cyanobacteria;c__Cyanophyceae;o__Synechococcales;f__Synechococcaceae;g__Synechococcus\t640",
-            "ASV_004\tk__Bacteria;p__Proteobacteria;c__Alphaproteobacteria;o__Pelagibacterales;f__Pelagibacteraceae;g__Pelagibacter\t880",
-            "ASV_005\tk__Bacteria;p__Firmicutes;c__Bacilli;o__Bacillales;f__Bacillaceae;g__Bacillus\t410",
-            "ASV_012\tUnclassified Marine Bacterium\t160",
-        ]
-
-    # Save sample taxonomy strictly for the actual uploaded sample
-    (tax_dir / f"{sample_name}_taxonomy.tsv").write_text("\n".join(tax_rows_primary))
+    
+    # Generate dynamic taxonomy TSVs for EVERY uploaded file
+    for s_idx, f_info in enumerate(all_files_info):
+        s_name = f_info["sample_name"]
+        mult = 1.0 + (s_idx * 0.15 - 0.05 * (s_idx % 3))
+        
+        if "18S" in marker_upper:
+            tax_rows = [
+                "ASV_ID\ttaxon\tabundance",
+                f"ASV_001\tk__Eukaryota;p__Dinoflagellata;c__Dinophyceae;o__Gymnodiniales;f__Gymnodiniaceae;g__Gymnodinium\t{int(1420 * mult)}",
+                f"ASV_002\tk__Eukaryota;p__Bacillariophyta;c__Bacillariophyceae;o__Naviculales;f__Naviculaceae;g__Navicula\t{int(1180 * mult)}",
+                f"ASV_003\tk__Eukaryota;p__Chlorophyta;c__Mamiellophyceae;o__Mamiellales;f__Mamiellaceae;g__Micromonas\t{int(950 * mult)}",
+                f"ASV_004\tk__Eukaryota;p__Ciliophora;c__Spirotrichea;o__Choreotrichida;f__Tintinnidiidae;g__Tintinnidium\t{int(780 * mult)}",
+                f"ASV_005\tk__Eukaryota;p__Haptophyta;c__Prymnesiophyceae;o__Isochrysidales;f__Noelaerhabdaceae;g__Emiliania\t{int(690 * mult)}",
+                f"ASV_006\tk__Eukaryota;p__Ochrophyta;c__Pelagophyceae;o__Pelagomonadales;f__Pelagomonadaceae;g__Pelagomonas\t{int(540 * mult)}",
+                f"ASV_007\tk__Eukaryota;p__Arthropoda;c__Copepoda;o__Calanoida;f__Calanidae;g__Calanus\t{int(480 * mult)}",
+                f"ASV_008\tk__Eukaryota;p__Cnidaria;c__Hydrozoa;o__Siphonophorae;f__Diphyidae;g__Diphyes\t{int(410 * mult)}",
+                f"ASV_009\tk__Eukaryota;p__Bacillariophyta;c__Mediophyceae;o__Thalassiosirales;f__Thalassiosiraceae;g__Thalassiosira\t{int(360 * mult)}",
+                f"ASV_010\tk__Eukaryota;p__Dinoflagellata;c__Dinophyceae;o__Suessiales;f__Symbiodiniaceae;g__Symbiodinium\t{int(310 * mult)}",
+                f"ASV_011\tk__Eukaryota;p__Ascomycota;c__Saccharomycetes;o__Saccharomycetales;f__Saccharomycetaceae;g__Candida\t{int(260 * mult)}",
+                f"ASV_012\tUnclassified Marine Eukaryote ASV\t{int(220 * mult)}",
+            ]
+        else:
+            tax_rows = [
+                "ASV_ID\ttaxon\tabundance",
+                f"ASV_001\tk__Bacteria;p__Proteobacteria;c__Gammaproteobacteria;o__Alteromonadales;f__Alteromonadaceae;g__Alteromonas\t{int(1350 * mult)}",
+                f"ASV_002\tk__Bacteria;p__Bacteroidetes;c__Flavobacteriia;o__Flavobacteriales;f__Flavobacteriaceae;g__Flavobacterium\t{int(1120 * mult)}",
+                f"ASV_003\tk__Bacteria;p__Cyanobacteria;c__Cyanophyceae;o__Synechococcales;f__Synechococcaceae;g__Synechococcus\t{int(890 * mult)}",
+                f"ASV_004\tk__Bacteria;p__Proteobacteria;c__Alphaproteobacteria;o__Pelagibacterales;f__Pelagibacteraceae;g__Pelagibacter\t{int(760 * mult)}",
+                f"ASV_005\tk__Bacteria;p__Firmicutes;c__Bacilli;o__Bacillales;f__Bacillaceae;g__Bacillus\t{int(620 * mult)}",
+                f"ASV_006\tk__Bacteria;p__Actinobacteria;c__Acidimicrobiia;o__Acidimicrobiales;f__Microtrichaceae;g__Ilumatobacter\t{int(510 * mult)}",
+                f"ASV_007\tk__Bacteria;p__Planctomycetes;c__Planctomycetia;o__Pirellulales;f__Pirellulaceae;g__Blastopirellula\t{int(430 * mult)}",
+                f"ASV_008\tk__Bacteria;p__Verrucomicrobia;c__Verrucomicrobiae;o__Verrucomicrobiales;f__Verrucomicrobiaceae;g__Rubritalea\t{int(380 * mult)}",
+                f"ASV_009\tk__Bacteria;p__Proteobacteria;c__Deltaproteobacteria;o__Desulfobacterales;f__Desulfobacteraceae;g__Desulfobacter\t{int(320 * mult)}",
+                f"ASV_010\tk__Bacteria;p__Chloroflexi;c__Anaerolineae;o__Anaerolineales;f__Anaerolineaceae;g__Anaerolinea\t{int(270 * mult)}",
+                f"ASV_011\tk__Bacteria;p__Acidobacteria;c__Vicinamibacteria;o__Vicinamibacterales;f__Vicinamibacteraceae;g__Luteitalea\t{int(230 * mult)}",
+                f"ASV_012\tUnclassified Marine Bacterium\t{int(190 * mult)}",
+            ]
+        
+        (tax_dir / f"{s_name}_taxonomy.tsv").write_text("\n".join(tax_rows))
 
     # ── Novelty ──
     nov_dir = od / "novelty"
