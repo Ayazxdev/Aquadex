@@ -301,6 +301,19 @@ def list_artifacts(run_id: str) -> List[Dict[str, str]]:
 
 def compose_dashboard(run_id: str) -> Dict[str, Any]:
     od = out_dir(run_id)
+    summary_file = od / "summary.json"
+    if summary_file.exists():
+        try:
+            return json.loads(summary_file.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+
+    try:
+        from ..results_aggregator import aggregate_results
+        return aggregate_results(od)
+    except Exception as e:
+        logger.warning(f"aggregate_results failed in compose_dashboard fallback: {e}")
+
     status_data = _safe_read_json(od / "status.json", {})
     status_str = status_data.get("status", "unknown")
     
