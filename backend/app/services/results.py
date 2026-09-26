@@ -285,6 +285,12 @@ def list_artifacts(run_id: str) -> List[Dict[str, str]]:
         ("summary.json", outp / "summary.json"),
     ]
     
+    tax_dir = outp / "taxonomy"
+    if tax_dir.exists():
+        for tsv in sorted(tax_dir.glob("*_taxonomy.tsv")):
+            if not any(c[0] == tsv.name for c in candidates):
+                candidates.append((tsv.name, tsv))
+
     base = settings.ARTIFACT_BASE_URL.rstrip("/")
     for name, path in candidates:
         if path.exists():

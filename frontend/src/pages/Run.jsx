@@ -99,7 +99,8 @@ const Run = ({ onNavigate, setCurrentRunId }) => {
       const response = await fetch(`${API_BASE}/status/${id}`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const result = await response.json();
-      setStatus(`Status: ${result.status} (${Math.round((result.progress || 0) * 100)}%)`);
+      const msg = result.message ? ` — ${result.message}` : '';
+      setStatus(`Status: ${result.status} (${Math.round((result.progress || 0) * 100)}%)${msg}`);
       if (result.status === 'completed') {
         setIsRunning(false);
         setStatus('Pipeline completed! View results.');
@@ -108,7 +109,7 @@ const Run = ({ onNavigate, setCurrentRunId }) => {
         setStatus(`Pipeline failed: ${result.message || 'Unknown error'}`);
       } else {
         // Continue polling — pass id explicitly so closure is never stale
-        pollTimerRef.current = setTimeout(() => pollStatus(id, retries), 5000);
+        pollTimerRef.current = setTimeout(() => pollStatus(id, retries), 1500);
       }
     } catch (error) {
       if (retries < 3) {

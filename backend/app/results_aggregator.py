@@ -542,23 +542,71 @@ def _is_binomial_species(name: str) -> bool:
     return False
 
 
-def build_sunburst_data(taxonomy_df: pd.DataFrame, top_n_per_rank: int = 12) -> Dict[str, Any]:
+def build_sunburst_data(taxonomy_df: pd.DataFrame, top_n_per_rank: int = 15) -> Dict[str, Any]:
     """
-    Build a Plotly sunburst-compatible hierarchy from Kraken2 report taxonomy data.
+    Build a Plotly sunburst-compatible hierarchy from taxonomy data.
     Returns {"labels": [...], "parents": [...], "values": [...], "text": [...]}
-    Hierarchy: Life -> Domain -> Phylum -> Class -> Order -> Family -> Genus -> Species
-    Species shown only if they are proper binomial names.
+    Hierarchy: Life -> Domain/Kingdom -> Phylum -> Class -> Order -> Family -> Genus -> Species
     """
-    if taxonomy_df.empty:
+    if taxonomy_df is None or taxonomy_df.empty:
         return {"labels": [], "parents": [], "values": [], "text": []}
 
-    # Includes species in ordering
-    ranks_ordered = ["d__", "p__", "c__", "o__", "f__", "g__", "s__"]
+    # Filter noise taxa
+    clean_df = taxonomy_df[~taxonomy_df["taxon"].astype(str).str.lower().isin(_NOISE_TAXA)].copy()
+    if clean_df.empty:
+        return {"labels": [], "parents": [], "values": [], "text": []}
 
-    # Aggregate abundance across all samples, filter noise
+    sample_taxa = clean_df["taxon"].dropna().astype(str).tolist()
+    has_semicolon_lineages = any(";" in t for t in sample_taxa)
+
+    if has_semicolon_lineages:
+        # Build multi-ring hierarchical tree directly from full lineage paths
+        node_parents: Dict[str, str] = {"Life": ""}
+        node_values: Dict[str, float] = {"Life": 0.0}
+
+        for _, row in clean_df.iterrows():
+            t = str(row.get("taxon", "")).strip()
+            if not t or t.lower() in _NOISE_TAXA or t.lower() == "unclassified":
+                continue
+            try:
+                ab = float(row.get("abundance", 1.0))
+            except (ValueError, TypeError):
+                ab = 1.0
+
+            chunks = [c.strip() for c in t.split(";") if c.strip()]
+            current_parent = "Life"
+            for chunk in chunks:
+                clean_name = chunk.split("__", 1)[1].strip() if "__" in chunk else chunk
+                if not clean_name or clean_name.lower() in _NOISE_TAXA or clean_name.lower() == "unclassified":
+                    continue
+                node_values[clean_name] = node_values.get(clean_name, 0.0) + ab
+                if clean_name not in node_parents:
+                    node_parents[clean_name] = current_parent
+                current_parent = clean_name
+
+        top_children = [k for k, p in node_parents.items() if p == "Life"]
+        node_values["Life"] = sum(node_values.get(c, 0.0) for c in top_children) or 1.0
+
+        labels = []
+        parents = []
+        values = []
+        text = []
+        total_ab = node_values["Life"] or 1.0
+
+        for name in node_parents:
+            val = node_values.get(name, 0.0)
+            labels.append(name)
+            parents.append(node_parents[name])
+            values.append(round(val, 2))
+            pct = round((val / total_ab) * 100, 1)
+            text.append(f"{name}<br>{pct}% ({round(val):,} reads)")
+
+        return {"labels": labels, "parents": parents, "values": values, "text": text}
+
+    # Fallback for individual rank prefixes (d__, k__, p__, c__, o__, f__, g__, s__)
+    ranks_ordered = ["d__", "k__", "p__", "c__", "o__", "f__", "g__", "s__"]
     agg = (
-        taxonomy_df[~taxonomy_df["taxon"].str.lower().isin(_NOISE_TAXA)]
-        .groupby("taxon", as_index=False)["abundance"]
+        clean_df.groupby("taxon", as_index=False)["abundance"]
         .sum()
         .sort_values("abundance", ascending=False)
     )
@@ -572,30 +620,26 @@ def build_sunburst_data(taxonomy_df: pd.DataFrame, top_n_per_rank: int = 12) -> 
             continue
         for rk in ranks_ordered:
             if t.startswith(rk):
-                # For species: only include proper binomial names (e.g. "Tiaropsis multicirrata")
                 if rk == "s__" and not _is_binomial_species(clean):
                     break
                 per_rank[rk].append((clean, ab))
                 break
 
-    # Keep top N per rank
     for rk in ranks_ordered:
         per_rank[rk] = sorted(per_rank[rk], key=lambda x: x[1], reverse=True)[:top_n_per_rank]
 
-    labels: list = ["Life"]
-    parents: list = [""]
-    values: list = [0.0]
+    labels = ["Life"]
+    parents = [""]
+    values = [0.0]
 
-    # Level 1: Domains
-    for name, ab in per_rank["d__"]:
+    domain_ranks = per_rank["d__"] + per_rank["k__"]
+    for name, ab in domain_ranks:
         labels.append(name)
         parents.append("Life")
         values.append(round(ab * 100, 2))
 
-    available_domains = [n for n, _ in per_rank["d__"]]
-    top_domain = available_domains[0] if available_domains else "Eukaryota"
+    top_domain = domain_ranks[0][0] if domain_ranks else "Eukaryota"
 
-    # Level 2: Phyla -> attach to top domain
     top_phyla = []
     for name, ab in per_rank["p__"]:
         labels.append(name)
@@ -604,7 +648,6 @@ def build_sunburst_data(taxonomy_df: pd.DataFrame, top_n_per_rank: int = 12) -> 
         top_phyla.append(name)
     top_phylum = top_phyla[0] if top_phyla else top_domain
 
-    # Level 3: Classes -> distribute across phyla
     top_classes = []
     for i, (name, ab) in enumerate(per_rank["c__"]):
         parent = top_phyla[i % len(top_phyla)] if top_phyla else top_domain
@@ -613,7 +656,6 @@ def build_sunburst_data(taxonomy_df: pd.DataFrame, top_n_per_rank: int = 12) -> 
         values.append(round(ab * 100, 2))
         top_classes.append(name)
 
-    # Level 4: Orders -> distribute across classes
     top_orders = []
     for i, (name, ab) in enumerate(per_rank["o__"]):
         parent = top_classes[i % len(top_classes)] if top_classes else top_phylum
@@ -622,7 +664,6 @@ def build_sunburst_data(taxonomy_df: pd.DataFrame, top_n_per_rank: int = 12) -> 
         values.append(round(ab * 100, 2))
         top_orders.append(name)
 
-    # Level 5: Families -> distribute across orders
     top_families = []
     for i, (name, ab) in enumerate(per_rank["f__"]):
         parent = top_orders[i % len(top_orders)] if top_orders else top_phylum
@@ -631,7 +672,6 @@ def build_sunburst_data(taxonomy_df: pd.DataFrame, top_n_per_rank: int = 12) -> 
         values.append(round(ab * 100, 2))
         top_families.append(name)
 
-    # Level 6: Genera -> distribute across families
     top_genera = []
     for i, (name, ab) in enumerate(per_rank["g__"]):
         parent = top_families[i % len(top_families)] if top_families else top_phylum
@@ -640,22 +680,16 @@ def build_sunburst_data(taxonomy_df: pd.DataFrame, top_n_per_rank: int = 12) -> 
         values.append(round(ab * 100, 2))
         top_genera.append(name)
 
-    # Level 7: Species -> distribute across genera (only proper binomial names)
     for i, (name, ab) in enumerate(per_rank["s__"]):
-        # Try to match genus from species binomial name (first word)
         genus_name = name.split()[0] if name else ""
-        parent = genus_name if genus_name in top_genera else (top_genera[i % len(top_genera)] if top_genera else (top_families[i % len(top_families)] if top_families else top_phylum))
+        parent = genus_name if genus_name in top_genera else (top_genera[i % len(top_genera)] if top_genera else top_phylum)
         labels.append(name)
         parents.append(parent)
         values.append(round(ab * 100, 2))
 
-    # Root value = sum of domain values
-    domain_count = len(per_rank["d__"])
-    values[0] = round(sum(values[1:1 + domain_count]), 2)
-
-    # Hover text: "Name (XX%)"
-    total_ab = values[0] or 1.0
-    text = [f"{lb}<br>{round(v / total_ab * 100, 1)}%" for lb, v in zip(labels, values)]
+    total_val = sum(values[1:1 + len(domain_ranks)]) or 1.0
+    values[0] = round(total_val, 2)
+    text = [f"{lb}<br>{round(v / total_val * 100, 1)}%" for lb, v in zip(labels, values)]
 
     return {"labels": labels, "parents": parents, "values": values, "text": text}
 
