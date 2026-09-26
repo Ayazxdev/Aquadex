@@ -218,6 +218,75 @@ const Results = ({ currentRunId }) => {
     noveltyDecomp: null,
   });
 
+  // Industry-Standard Custom HTML Tooltip Overlay state (Solution 2)
+  const [plotTooltip, setPlotTooltip] = useState({
+    visible: false,
+    x: 0,
+    y: 0,
+    content: null,
+  });
+
+  const handlePlotHover = (event, type) => {
+    if (!event || !event.points || !event.points[0]) return;
+    const pt = event.points[0];
+    const e = event.event;
+    if (!e) return;
+
+    let content = null;
+    if (type === "umap") {
+      const cd = pt.customdata || [];
+      content = (
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", borderBottom: "1px solid #334155", paddingBottom: "4px" }}>
+            <span style={{ fontWeight: 700, color: "#38bdf8" }}>{cd[0] || "ASV"}</span>
+            <span style={{ fontSize: "11px", background: "#1e293b", padding: "2px 6px", borderRadius: "4px", color: "#94a3b8" }}>
+              Cluster {cd[3] ?? "0"}
+            </span>
+          </div>
+          <div><span style={{ color: "#94a3b8" }}>Taxon:</span> <strong style={{ color: "#f8fafc", marginLeft: "4px" }}>{cd[1] || "Unclassified"}</strong></div>
+          <div><span style={{ color: "#94a3b8" }}>Novelty:</span> <strong style={{ color: "#fbbf24", marginLeft: "4px" }}>{cd[2] || "0.000"}</strong></div>
+          <div><span style={{ color: "#94a3b8" }}>Coords:</span> <span style={{ color: "#cbd5e1", marginLeft: "4px" }}>({Number(pt.x).toFixed(2)}, {Number(pt.y).toFixed(2)})</span></div>
+        </div>
+      );
+    } else if (type === "rarefaction") {
+      const sampleName = pt.data?.name?.split(" (")[0] || "Sample";
+      content = (
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+          <div style={{ fontWeight: 700, color: "#38bdf8", borderBottom: "1px solid #334155", paddingBottom: "4px" }}>
+            {sampleName}
+          </div>
+          <div><span style={{ color: "#94a3b8" }}>Sequencing Depth:</span> <strong style={{ color: "#f8fafc", marginLeft: "4px" }}>{Number(pt.x).toLocaleString()} reads</strong></div>
+          <div><span style={{ color: "#94a3b8" }}>Expected Taxa:</span> <strong style={{ color: "#10b981", marginLeft: "4px" }}>{Number(pt.y).toFixed(1)}</strong></div>
+        </div>
+      );
+    } else if (type === "pcoa") {
+      const sampleName = pt.text || pt.data?.text?.[pt.pointIndex] || "Sample";
+      content = (
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+          <div style={{ fontWeight: 700, color: "#38bdf8", borderBottom: "1px solid #334155", paddingBottom: "4px" }}>
+            {sampleName}
+          </div>
+          <div><span style={{ color: "#94a3b8" }}>PC1:</span> <strong style={{ color: "#f8fafc", marginLeft: "4px" }}>{Number(pt.x).toFixed(4)}</strong></div>
+          <div><span style={{ color: "#94a3b8" }}>PC2:</span> <strong style={{ color: "#f8fafc", marginLeft: "4px" }}>{Number(pt.y).toFixed(4)}</strong></div>
+        </div>
+      );
+    }
+
+    if (content) {
+      setPlotTooltip({
+        visible: true,
+        x: e.clientX,
+        y: e.clientY,
+        content,
+      });
+    }
+  };
+
+  const handlePlotUnhover = () => {
+    setPlotTooltip({ visible: false, x: 0, y: 0, content: null });
+  };
+
+
   const getFullArtifactUrl = (url) => {
     if (!url || url === "#") return "#";
     if (url.startsWith("http://") || url.startsWith("https://")) return url;
@@ -980,14 +1049,14 @@ const Results = ({ currentRunId }) => {
                       text: activePcoaList.map(p => p.sample),
                       mode: "markers+text",
                       type: "scatter",
+                      hoverinfo: "none",
                       textposition: "top center",
                       textfont: { family: "Inter, sans-serif", size: 13, color: "#1e293b" },
                       marker: {
                         size: 16,
                         color: ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4"],
                         line: { color: "#ffffff", width: 2 }
-                      },
-                      hovertemplate: "<b>%{text}</b><br>PC1: %{x:.4f}<br>PC2: %{y:.4f}<extra></extra>"
+                      }
                     }
                   ]}
                   layout={{
@@ -997,13 +1066,6 @@ const Results = ({ currentRunId }) => {
                     paper_bgcolor: "transparent",
                     plot_bgcolor: "rgba(248,250,252,0.8)",
                     hovermode: "closest",
-                    hoverlabel: {
-                      align: "center",
-                      namelength: -1,
-                      bgcolor: "#0f172a",
-                      bordercolor: "#38bdf8",
-                      font: { color: "#ffffff", size: 13, family: "Inter, sans-serif" }
-                    },
                     xaxis: {
                       title: `PC1 (${pc1_var}% variance explained)`,
                       zeroline: true,
@@ -1021,6 +1083,8 @@ const Results = ({ currentRunId }) => {
                     },
                     font: { family: "Inter, sans-serif", color: "#374151" }
                   }}
+                  onHover={(e) => handlePlotHover(e, "pcoa")}
+                  onUnhover={handlePlotUnhover}
                   style={{ width: "100%", height: "100%" }}
                   config={{ responsive: true, displaylogo: false, displayModeBar: "hover", toImageButtonOptions: { format: "svg", filename: "pcoa_ordination" } }}
                 />
@@ -1262,9 +1326,9 @@ const Results = ({ currentRunId }) => {
                     y: curve.map(c => c.expected_taxa),
                     mode: "lines+markers",
                     type: "scatter",
+                    hoverinfo: "none",
                     line: { color: colors[i % colors.length], width: 2.5, shape: "spline" },
-                    marker: { size: 6 },
-                    hovertemplate: `<b>${s.sample}</b><br>Sequencing Depth: %{x:,}<br>Expected Taxa: %{y:.1f}<extra></extra>`
+                    marker: { size: 6 }
                   };
                 });
 
@@ -1276,6 +1340,7 @@ const Results = ({ currentRunId }) => {
                       y: [0, 4.2, 7.8, 8.8, 9.0, 9.0, 9.0],
                       mode: "lines+markers",
                       type: "scatter",
+                      hoverinfo: "none",
                       line: { color: "#3b82f6", width: 2.5, shape: "spline" },
                     }]}
                     layout={{
@@ -1285,17 +1350,12 @@ const Results = ({ currentRunId }) => {
                       paper_bgcolor: "transparent",
                       plot_bgcolor: "rgba(248,250,252,0.8)",
                       hovermode: "closest",
-                      hoverlabel: {
-                        align: "center",
-                        namelength: -1,
-                        bgcolor: "#0f172a",
-                        bordercolor: "#38bdf8",
-                        font: { color: "#ffffff", size: 13, family: "Inter, sans-serif" }
-                      },
                       xaxis: { title: "Sequencing Reads (m)", gridcolor: "#f1f5f9" },
                       yaxis: { title: "Expected Species Richness (D₀)", gridcolor: "#f1f5f9" },
                       font: { family: "Inter, sans-serif", color: "#374151" }
                     }}
+                    onHover={(e) => handlePlotHover(e, "rarefaction")}
+                    onUnhover={handlePlotUnhover}
                     style={{ width: "100%", height: "100%" }}
                     config={{ responsive: true, displaylogo: false, displayModeBar: "hover" }}
                   />
@@ -1694,7 +1754,7 @@ const Results = ({ currentRunId }) => {
                   return (
                     <Plot
                       key={umapColorMode}
-                      data={traces}
+                      data={traces.map(t => ({ ...t, hoverinfo: "none" }))}
                       layout={{
                         height: 540,
                         autosize: true,
@@ -1702,18 +1762,13 @@ const Results = ({ currentRunId }) => {
                         paper_bgcolor: "transparent",
                         plot_bgcolor: "rgba(248,250,252,0.7)",
                         hovermode: "closest",
-                        hoverlabel: {
-                          align: "center",
-                          namelength: -1,
-                          bgcolor: "#0f172a",
-                          bordercolor: "#38bdf8",
-                          font: { color: "#ffffff", size: 13, family: "Inter, sans-serif" }
-                        },
                         xaxis: { title: "UMAP Dimension 1", gridcolor: "rgba(0,0,0,0.06)", zerolinecolor: "rgba(0,0,0,0.12)", automargin: true },
                         yaxis: { title: "UMAP Dimension 2", gridcolor: "rgba(0,0,0,0.06)", zerolinecolor: "rgba(0,0,0,0.12)", automargin: true },
                         legend: umapColorMode === "novelty" ? undefined : { orientation: "h", y: -0.2, font: { size: 11 }, bgcolor: "rgba(255,255,255,0.9)", itemsizing: "constant" },
                         font: { family: "Inter, sans-serif", color: "#374151" }
                       }}
+                      onHover={(e) => handlePlotHover(e, "umap")}
+                      onUnhover={handlePlotUnhover}
                       style={{ width: "100%", height: "100%" }}
                       config={{ responsive: true, displaylogo: false, displayModeBar: "hover", toImageButtonOptions: { format: "svg", filename: "umap_clusters" } }}
                     />
@@ -2218,25 +2273,31 @@ const Results = ({ currentRunId }) => {
 
   return (
     <div className="results-page-container">
-      {/* Global CSS injection for Plotly tooltip box locking */}
-      <style>{`
-        .hoverlayer .js-hover-text text,
-        .hoverlayer .hovertext text,
-        .hoverlayer text {
-          dominant-baseline: middle !important;
-          text-anchor: middle !important;
-          y: 0 !important;
-        }
-        .hoverlayer text tspan,
-        .hoverlayer .hovertext text tspan {
-          text-anchor: middle !important;
-        }
-        .hoverlayer .js-hover-text path,
-        .hoverlayer .hovertext path,
-        .hoverlayer path {
-          pointer-events: none !important;
-        }
-      `}</style>
+      {/* Industry-Standard Custom HTML Floating Tooltip Overlay */}
+      {plotTooltip.visible && (
+        <div
+          style={{
+            position: "fixed",
+            left: `${plotTooltip.x + (plotTooltip.x > (typeof window !== "undefined" ? window.innerWidth : 1200) - 260 ? -240 : 16)}px`,
+            top: `${plotTooltip.y + (plotTooltip.y < 120 ? 16 : -95)}px`,
+            backgroundColor: "rgba(15, 23, 42, 0.95)",
+            border: "1px solid #38bdf8",
+            color: "#ffffff",
+            padding: "10px 14px",
+            borderRadius: "8px",
+            zIndex: 999999,
+            pointerEvents: "none",
+            boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4)",
+            fontSize: "12px",
+            lineHeight: "1.5",
+            maxWidth: "340px",
+            backdropFilter: "blur(8px)",
+            whiteSpace: "nowrap"
+          }}
+        >
+          {plotTooltip.content}
+        </div>
+      )}
       <div className="results-content">
         <div className="results-header">
           <h1 className="results-title">Analysis Results</h1>
