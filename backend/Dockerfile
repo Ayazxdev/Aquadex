@@ -38,6 +38,7 @@ COPY app /app/app
 # fall back to the PyTorch CUDA attention path which works correctly.
 COPY scripts/patch_bert_layers.py /app/scripts/patch_bert_layers.py
 
-EXPOSE 8000
-CMD ["/bin/sh", "-c", "python3 /app/scripts/patch_bert_layers.py && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+ENV PORT=10000
+EXPOSE 10000
+CMD ["/bin/sh", "-c", "python3 /app/scripts/patch_bert_layers.py && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-10000}"]
 

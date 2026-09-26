@@ -10,6 +10,8 @@ services:
     numInstances: 1
     region: oregon
     envVars:
+      - key: PORT
+        value: 10000
       - key: DATA_IN
         value: /data/in
       - key: DATA_OUT

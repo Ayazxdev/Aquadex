@@ -14,6 +14,7 @@ services:
       - ./.edna_data/tmp:/data/tmp
       - ./.edna_data/models:/app/models
     environment:
+      PORT: "8000"
       DATA_IN: /data/in
       DATA_OUT: /data/out
       DATA_DB: /data/db
