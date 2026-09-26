@@ -403,57 +403,64 @@ def _create_demo_outputs(run_id: str, marker: str = "18S", read_type: str = "sho
         
         (tax_dir / f"{s_name}_taxonomy.tsv").write_text("\n".join(tax_rows))
 
-    # ── Novelty ──
+    # ── Novelty (Dynamic for all uploaded samples) ──
     nov_dir = od / "novelty"
     nov_dir.mkdir(parents=True, exist_ok=True)
-    # Deep-sea sample locations (Indian Ocean / CMLRE-relevant coordinates)
-    sample_locations = {
-        "ASV_001": {"lat": "8.5", "lon": "76.2", "depth": "3200m", "location": "Arabian Sea Abyssal Plain"},
-        "ASV_002": {"lat": "12.3", "lon": "80.1", "depth": "4100m", "location": "Bay of Bengal Deep"},
-        "ASV_003": {"lat": "6.8", "lon": "72.5", "depth": "2800m", "location": "Laccadive Basin"},
-        "ASV_004": {"lat": "15.2", "lon": "84.3", "depth": "3500m", "location": "Central Indian Ocean Ridge"},
-        "ASV_005": {"lat": "9.1", "lon": "78.4", "depth": "3900m", "location": "Carlsberg Ridge"},
-        "ASV_006": {"lat": "11.7", "lon": "82.6", "depth": "4500m", "location": "Andaman Trench"},
-        "ASV_007": {"lat": "7.4", "lon": "74.8", "depth": "2200m", "location": "Lakshadweep Slope"},
-        "ASV_008": {"lat": "13.5", "lon": "86.2", "depth": "5100m", "location": "Wharton Basin"},
-        "ASV_009": {"lat": "10.2", "lon": "79.5", "depth": "3700m", "location": "Ninety East Ridge"},
-        "ASV_010": {"lat": "14.8", "lon": "83.1", "depth": "4200m", "location": "Eastern Indian Ocean"},
-        "ASV_011": {"lat": "8.9", "lon": "77.3", "depth": "3300m", "location": "Mascarene Basin"},
-        "ASV_012": {"lat": "16.1", "lon": "85.7", "depth": "4800m", "location": "Deep Indian Ocean"},
-    }
-    abundance_map = {
-        "ASV_001": "1250", "ASV_002": "980", "ASV_003": "750", "ASV_004": "650",
-        "ASV_005": "580", "ASV_006": "520", "ASV_007": "480", "ASV_008": "420",
-        "ASV_009": "380", "ASV_010": "350", "ASV_011": "320", "ASV_012": "290",
-    }
+
+    base_templates = [
+        ("0.95", "0.12", "ref_vibrio_1;ref_vibrio_2", "0.45;0.52", "Vibrionaceae placement", "Remote Homolog (38.5% id)", "Pseudomonadota (Proteobacteria)", 0, {"depth": "3200m", "location": "Arabian Sea Abyssal Plain", "lat": "8.5", "lon": "76.2"}),
+        ("0.87", "0.18", "ref_flavo_1;ref_flavo_2", "0.52;0.61", "Flavobacteriaceae placement", "Remote Homolog (51.0% id)", "Bacteroidota", 0, {"depth": "4100m", "location": "Bay of Bengal Deep", "lat": "12.3", "lon": "80.1"}),
+        ("0.18", "0.85", "ref_bacillus_1;ref_bacillus_2", "0.08;0.11", "Bacillaceae placement", "Bacillus subtilis (99.2% id)", "Bacillota (Firmicutes)", 1, {"depth": "2800m", "location": "Laccadive Basin", "lat": "6.8", "lon": "72.5"}),
+        ("0.78", "0.22", "ref_myco_1", "0.38", "Mycobacteriaceae placement", "Divergent Homolog (68.2% id)", "Actinomycetota", 2, {"depth": "3500m", "location": "Central Indian Ocean Ridge", "lat": "15.2", "lon": "84.3"}),
+        ("0.41", "0.46", "ref_roseo_1;ref_roseo_2", "0.29;0.35", "Rhodobacteraceae placement", "Roseobacter sp. (91.4% id)", "Pseudomonadota (Proteobacteria)", 0, {"depth": "3900m", "location": "Carlsberg Ridge", "lat": "9.1", "lon": "78.4"}),
+        ("0.83", "0.19", "ref_chloro_1", "0.42", "Chlamydomonas-like placement", "Remote Homolog (54.1% id)", "Chlorophyta", 3, {"depth": "4500m", "location": "Andaman Trench", "lat": "11.7", "lon": "82.6"}),
+        ("0.22", "0.82", "ref_synecho_1;ref_synecho_2", "0.09;0.12", "Synechococcaceae placement", "Synechococcus sp. (98.5% id)", "Cyanobacteriota", 1, {"depth": "2200m", "location": "Lakshadweep Slope", "lat": "7.4", "lon": "74.8"}),
+        ("0.91", "0.14", "ref_desulf_1", "0.47", "Desulfobacteraceae placement", "Remote Homolog (42.0% id)", "Thermodesulfobacteriota", 2, {"depth": "5100m", "location": "Wharton Basin", "lat": "13.5", "lon": "86.2"}),
+        ("0.88", "0.15", "ref_plancto_1", "0.50", "Planctomycetota placement", "Remote Homolog (48.3% id)", "Planctomycetota", 2, {"depth": "3700m", "location": "Ninety East Ridge", "lat": "10.2", "lon": "79.5"}),
+        ("0.26", "0.78", "ref_verruco_1", "0.14", "Verrucomicrobiaceae placement", "Verrucomicrobia bacterium (96.8% id)", "Verrucomicrobiota", 3, {"depth": "4200m", "location": "Eastern Indian Ocean", "lat": "14.8", "lon": "83.1"}),
+        ("0.90", "0.13", "ref_diatom_1;ref_diatom_2", "0.46;0.51", "Naviculaceae placement", "Remote Homolog (44.6% id)", "Bacillariophyta (Diatom)", 3, {"depth": "3300m", "location": "Mascarene Basin", "lat": "8.9", "lon": "77.3"}),
+        ("0.96", "0.08", "", "0.82", "Unplaced Novel Lineage", "No Homology Hit", "Unassigned Novel Lineage", -1, {"depth": "4800m", "location": "Deep Indian Ocean", "lat": "16.1", "lon": "85.7"}),
+    ]
+
     nov_rows = [
         "ASV_ID\tnovelty_score\tanchor_confidence\ttop_refs\tdistances\tepa_annotation\tdiamond_hit\tabundance\tdepth\tlocation\tlat\tlon",
     ]
     nov_csv_rows = [
         "id,novelty_score,vae_loss,faiss_dist,epa_annotation,diamond_hit,abundance,depth,location,lat,lon",
     ]
-    nov_data = [
-        ("ASV_001", "0.95", "0.12", "ref_vibrio_1;ref_vibrio_2", "0.45;0.52", "Vibrionaceae placement", "Remote Homolog (38.5% id)"),
-        ("ASV_002", "0.87", "0.18", "ref_flavo_1;ref_flavo_2", "0.52;0.61", "Flavobacteriaceae placement", "Remote Homolog (51.0% id)"),
-        ("ASV_003", "0.18", "0.85", "ref_bacillus_1;ref_bacillus_2", "0.08;0.11", "Bacillaceae placement", "Bacillus subtilis (99.2% id)"),
-        ("ASV_004", "0.78", "0.22", "ref_myco_1", "0.38", "Mycobacteriaceae placement", "Divergent Homolog (68.2% id)"),
-        ("ASV_005", "0.41", "0.46", "ref_roseo_1;ref_roseo_2", "0.29;0.35", "Rhodobacteraceae placement", "Roseobacter sp. (91.4% id)"),
-        ("ASV_006", "0.83", "0.19", "ref_chloro_1", "0.42", "Chlamydomonas-like placement", "Remote Homolog (54.1% id)"),
-        ("ASV_007", "0.22", "0.82", "ref_synecho_1;ref_synecho_2", "0.09;0.12", "Synechococcaceae placement", "Synechococcus sp. (98.5% id)"),
-        ("ASV_008", "0.91", "0.14", "ref_desulf_1", "0.47", "Desulfobacteraceae placement", "Remote Homolog (42.0% id)"),
-        ("ASV_009", "0.88", "0.15", "ref_plancto_1", "0.50", "Planctomycetota placement", "Remote Homolog (48.3% id)"),
-        ("ASV_010", "0.26", "0.78", "ref_verruco_1", "0.14", "Verrucomicrobiaceae placement", "Verrucomicrobia bacterium (96.8% id)"),
-        ("ASV_011", "0.90", "0.13", "ref_diatom_1;ref_diatom_2", "0.46;0.51", "Naviculaceae placement", "Remote Homolog (44.6% id)"),
-        ("ASV_012", "0.96", "0.08", "", "0.82", "Unplaced Novel Lineage", "No Homology Hit"),
-    ]
-    for asv_id, score, vae, refs, dist, epa, diamond in nov_data:
-        loc = sample_locations[asv_id]
-        nov_rows.append(
-            f"{asv_id}\t{score}\t{vae}\t{refs}\t{dist}\t{epa}\t{diamond}\t{abundance_map[asv_id]}\t{loc['depth']}\t{loc['location']}\t{loc['lat']}\t{loc['lon']}"
-        )
-        nov_csv_rows.append(
-            f"{asv_id},{score},{vae},{dist.split(';')[0]},{epa},{diamond},{abundance_map[asv_id]},{loc['depth']},{loc['location']},{loc['lat']},{loc['lon']}"
-        )
+
+    cluster_map = {}
+    phylum_map = {}
+    novelty_map = {}
+
+    asv_idx = 1
+    for s_idx, f_info in enumerate(all_files_info):
+        s_name = f_info.get("sample_name", f"Sample_{s_idx+1}")
+        s_seed = zlib.crc32(s_name.encode("utf-8")) & 0xffffffff
+        s_rnd = random.Random(s_seed)
+
+        for tmpl in base_templates:
+            asv_id = f"ASV_{asv_idx:03d}"
+            asv_idx += 1
+            score, vae, refs, dist, epa, diamond, phylum, cid, loc = tmpl
+
+            if s_idx > 0:
+                s_score = round(min(0.99, max(0.10, float(score) + s_rnd.uniform(-0.05, 0.05))), 2)
+                s_abund = int(s_rnd.randint(220, 1600))
+            else:
+                s_score = float(score)
+                s_abund = int(s_rnd.randint(250, 1500))
+
+            nov_rows.append(
+                f"{asv_id}\t{s_score:.2f}\t{vae}\t{refs}\t{dist}\t{epa}\t{diamond}\t{s_abund}\t{loc['depth']}\t{loc['location']}\t{loc['lat']}\t{loc['lon']}"
+            )
+            nov_csv_rows.append(
+                f"{asv_id},{s_score:.2f},{vae},{dist.split(';')[0]},{epa},{diamond},{s_abund},{loc['depth']},{loc['location']},{loc['lat']},{loc['lon']}"
+            )
+            cluster_map[asv_id] = cid
+            phylum_map[asv_id] = (epa, phylum)
+            novelty_map[asv_id] = s_score
+
     (nov_dir / "novelty_report.tsv").write_text("\n".join(nov_rows))
     (nov_dir / "novelty.csv").write_text("\n".join(nov_csv_rows))
 
@@ -466,40 +473,6 @@ def _create_demo_outputs(run_id: str, marker: str = "18S", read_type: str = "sho
     run_rnd = random.Random(run_seed)
 
     clust_rows = ["ASV_ID\tcluster_id\tdim_1\tdim_2\tnovelty_score\tcluster_size\ttaxon\tphylum"]
-    cluster_map = {
-        "ASV_001": 0, "ASV_002": 0, "ASV_003": 1, "ASV_004": 2,
-        "ASV_005": 0, "ASV_006": 3, "ASV_007": 1, "ASV_008": 2,
-        "ASV_009": 2, "ASV_010": 3, "ASV_011": 3, "ASV_012": -1,
-    }
-    phylum_map = {
-        "ASV_001": ("Vibrionaceae", "Pseudomonadota (Proteobacteria)"),
-        "ASV_002": ("Flavobacteriaceae", "Bacteroidota"),
-        "ASV_003": ("Bacillaceae", "Bacillota (Firmicutes)"),
-        "ASV_004": ("Mycobacteriaceae", "Actinomycetota"),
-        "ASV_005": ("Rhodobacteraceae", "Pseudomonadota (Proteobacteria)"),
-        "ASV_006": ("Chlamydomonadaceae", "Chlorophyta"),
-        "ASV_007": ("Synechococcaceae", "Cyanobacteriota"),
-        "ASV_008": ("Desulfobacteraceae", "Thermodesulfobacteriota"),
-        "ASV_009": ("Planctomycetaceae", "Planctomycetota"),
-        "ASV_010": ("Verrucomicrobiaceae", "Verrucomicrobiota"),
-        "ASV_011": ("Naviculaceae", "Bacillariophyta (Diatom)"),
-        "ASV_012": ("Unplaced Novel Lineage", "Unassigned Novel Lineage"),
-    }
-    novelty_map = {
-        "ASV_001": round(run_rnd.uniform(0.85, 0.98), 2),
-        "ASV_002": round(run_rnd.uniform(0.75, 0.92), 2),
-        "ASV_003": round(run_rnd.uniform(0.15, 0.45), 2),
-        "ASV_004": round(run_rnd.uniform(0.65, 0.85), 2),
-        "ASV_005": round(run_rnd.uniform(0.35, 0.60), 2),
-        "ASV_006": round(run_rnd.uniform(0.70, 0.90), 2),
-        "ASV_007": round(run_rnd.uniform(0.20, 0.50), 2),
-        "ASV_008": round(run_rnd.uniform(0.80, 0.96), 2),
-        "ASV_009": round(run_rnd.uniform(0.75, 0.94), 2),
-        "ASV_010": round(run_rnd.uniform(0.20, 0.45), 2),
-        "ASV_011": round(run_rnd.uniform(0.82, 0.95), 2),
-        "ASV_012": round(run_rnd.uniform(0.92, 0.99), 2),
-    }
-
     sizes = Counter(cluster_map.values())
     for asv, cid in cluster_map.items():
         base_x = cid * 3.2 + run_rnd.uniform(-1.2, 1.2)
@@ -510,11 +483,23 @@ def _create_demo_outputs(run_id: str, marker: str = "18S", read_type: str = "sho
         clust_rows.append(f"{asv}\t{cid}\t{x:.4f}\t{y:.4f}\t{novelty_map[asv]}\t{sizes[cid]}\t{tx}\t{ph}")
     (clust_dir / "clusters.tsv").write_text("\n".join(clust_rows))
 
-    # ── Phylogeny (simple Newick) ──
+    # ── Phylogeny (Dynamic Newick for all ASVs) ──
     phylo_dir = od / "phylogeny"
     phylo_dir.mkdir(parents=True, exist_ok=True)
-    newick = "((ASV_001:0.1,ASV_002:0.12):0.05,((ASV_003:0.08,ASV_007:0.09):0.04,(ASV_004:0.15,(ASV_008:0.11,ASV_009:0.13):0.06):0.07):0.03,((ASV_005:0.10,ASV_006:0.14):0.05,(ASV_010:0.12,(ASV_011:0.16,ASV_012:0.20):0.08):0.06):0.04);"
+    asv_leaves = [f"{asv}:{round(run_rnd.uniform(0.08, 0.22), 3)}" for asv in cluster_map]
+    tree_nodes = list(asv_leaves)
+    while len(tree_nodes) > 1:
+        new_level = []
+        for i in range(0, len(tree_nodes), 2):
+            if i + 1 < len(tree_nodes):
+                branch = round(run_rnd.uniform(0.03, 0.08), 3)
+                new_level.append(f"({tree_nodes[i]},{tree_nodes[i+1]}):{branch}")
+            else:
+                new_level.append(tree_nodes[i])
+        tree_nodes = new_level
+    newick = (tree_nodes[0] if tree_nodes else "ASV_001:0.1;") + ";"
     (phylo_dir / "tree.nwk").write_text(newick + "\n")
+
     # phylogeny table
     phylo_rows = ["ASV_ID\tcluster_id\tnovelty_score\tembedding_dim"]
     for asv in cluster_map:

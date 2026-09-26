@@ -528,12 +528,32 @@ def _classical_pcoa(D: np.ndarray, labels: List[str]) -> Dict[str, Any]:
     pos_mask = eigenvalues > 1e-10
     pos_vals = eigenvalues[pos_mask]
     pos_vecs = eigenvectors[:, pos_mask]
-    if pos_vals.shape[0] < 2:
-        # Degenerate: return zeros
+    if pos_vals.shape[0] == 0:
         return {"pcoa": [{"sample": s, "x": 0.0, "y": 0.0, "pc1_var": 0.0, "pc2_var": 0.0} for s in labels],
                 "eigenvalues": [], "proportion_explained": []}
+
+    if pos_vals.shape[0] == 1:
+        # Standard for N = 2 samples: 1D spectral ordination along PC1
+        val = float(pos_vals[0])
+        vec = pos_vecs[:, 0]
+        x_coords = vec * np.sqrt(val)
+        pcoa_points = [
+            {
+                "sample": s,
+                "x": round(float(x_coords[i]), 6),
+                "y": 0.0,
+                "pc1_var": 100.0,
+                "pc2_var": 0.0,
+            }
+            for i, s in enumerate(labels)
+        ]
+        return {
+            "pcoa": pcoa_points,
+            "eigenvalues": [round(val, 6)],
+            "proportion_explained": [{"axis": "PC1", "pct": 100.0}, {"axis": "PC2", "pct": 0.0}],
+        }
+
     coords = pos_vecs * np.sqrt(pos_vals)   # shape (n, n_pos)
-    # Proportion of variation explained
     total_pos = pos_vals.sum()
     prop_explained = pos_vals / total_pos
     pc1_var = round(float(prop_explained[0]) * 100, 1)
@@ -542,8 +562,8 @@ def _classical_pcoa(D: np.ndarray, labels: List[str]) -> Dict[str, Any]:
     for i, s in enumerate(labels):
         pcoa_points.append({
             "sample": s,
-            "x": float(coords[i, 0]),
-            "y": float(coords[i, 1]) if coords.shape[1] > 1 else 0.0,
+            "x": round(float(coords[i, 0]), 6),
+            "y": round(float(coords[i, 1]), 6) if coords.shape[1] > 1 else 0.0,
             "pc1_var": pc1_var,
             "pc2_var": pc2_var,
         })
@@ -1317,11 +1337,11 @@ def compute_novelty_decomposition(novelty_df: pd.DataFrame) -> Dict[str, Any]:
         phylo_depth = round(raw_score * 0.45 + 0.05, 3)
 
         if raw_score >= 0.70:
-            classification = "High-confidence Novel Candidate"
+            classification = "High Novelty"
         elif raw_score >= 0.45:
-            classification = "Divergent Lineage Candidate"
+            classification = "Divergent Lineage"
         else:
-            classification = "Known Variant / Homolog"
+            classification = "Known Homolog"
 
         records.append({
             "asv_id": asv_id,

@@ -203,6 +203,7 @@ const Results = ({ currentRunId }) => {
   const [taxonomyChartData, setTaxonomyChartData] = useState(null);
   const [qcChartDataLive, setQcChartDataLive] = useState(null);
   const [alphaDataLive, setAlphaDataLive] = useState(null);
+  const [selectedAlphaSample, setSelectedAlphaSample] = useState("all");
   const [betaDataLive, setBetaDataLive] = useState(null);
   const [pcoaMetric, setPcoaMetric] = useState("bray_curtis"); // "bray_curtis" | "aitchison" | "unifrac"
   const [betaSubTab, setBetaSubTab] = useState("pcoa"); // "pcoa" | "inference" | "phylo" | "coverage" | "differential" | "occupancy" | "heatmap" | "umap"
@@ -637,7 +638,42 @@ const Results = ({ currentRunId }) => {
           hill_q2_ci: [Number(((1 / Math.max(0.01, 1 - m.simpson)) * 0.94).toFixed(2)), Number(((1 / Math.max(0.01, 1 - m.simpson)) * 1.05).toFixed(2))],
         }));
 
-    const primarySample = data[0] || {};
+    const isMulti = data.length > 1;
+    let targetSample = {};
+    if (selectedAlphaSample === "all" && isMulti) {
+      const mean_q0 = data.reduce((acc, d) => acc + (d.hill_q0 || 0), 0) / data.length;
+      const mean_q1 = data.reduce((acc, d) => acc + (d.hill_q1 || 0), 0) / data.length;
+      const mean_q2 = data.reduce((acc, d) => acc + (d.hill_q2 || 0), 0) / data.length;
+      const mean_j = data.reduce((acc, d) => acc + (d.pielou_j || 0), 0) / data.length;
+      const q0_min = Math.min(...data.map(d => d.hill_q0 || 0));
+      const q0_max = Math.max(...data.map(d => d.hill_q0 || 0));
+      const q1_min = Math.min(...data.map(d => d.hill_q1 || 0)).toFixed(2);
+      const q1_max = Math.max(...data.map(d => d.hill_q1 || 0)).toFixed(2);
+      const q2_min = Math.min(...data.map(d => d.hill_q2 || 0)).toFixed(2);
+      const q2_max = Math.max(...data.map(d => d.hill_q2 || 0)).toFixed(2);
+      const j_min = Math.min(...data.map(d => d.pielou_j || 0)).toFixed(3);
+      const j_max = Math.max(...data.map(d => d.pielou_j || 0)).toFixed(3);
+
+      targetSample = {
+        hill_q0: Number.isInteger(mean_q0) ? mean_q0 : mean_q0.toFixed(1),
+        hill_q1: mean_q1.toFixed(2),
+        hill_q2: mean_q2.toFixed(2),
+        pielou_j: mean_j.toFixed(3),
+        subtitle_q0: `Mean across ${data.length} samples (range: ${q0_min} – ${q0_max})`,
+        subtitle_q1: `Mean across ${data.length} samples (range: ${q1_min} – ${q1_max})`,
+        subtitle_q2: `Mean across ${data.length} samples (range: ${q2_min} – ${q2_max})`,
+        subtitle_j: `Mean across ${data.length} samples (range: ${j_min} – ${j_max})`,
+      };
+    } else {
+      const chosen = data.find(d => d.sample === selectedAlphaSample) || data[0] || {};
+      targetSample = {
+        ...chosen,
+        subtitle_q0: chosen.hill_q0_ci ? `95% CI: [${chosen.hill_q0_ci[0]}, ${chosen.hill_q0_ci[1]}]` : `Sample: ${chosen.sample}`,
+        subtitle_q1: chosen.hill_q1_ci ? `95% CI: [${chosen.hill_q1_ci[0]}, ${chosen.hill_q1_ci[1]}]` : `Raw H' = ${chosen.shannon}`,
+        subtitle_q2: chosen.hill_q2_ci ? `95% CI: [${chosen.hill_q2_ci[0]}, ${chosen.hill_q2_ci[1]}]` : `Sample: ${chosen.sample}`,
+        subtitle_j: `Sample: ${chosen.sample} (${(chosen.pielou_j || 0) >= 0.8 ? "High Evenness" : "Uneven"})`,
+      };
+    }
 
     return (
       <div className="visualization-section" style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
@@ -648,8 +684,47 @@ const Results = ({ currentRunId }) => {
               Unified framework: <MathFormula math="{}^qD = \left(\sum_{i=1}^S p_i^q\right)^{\frac{1}{1-q}}" /> connecting richness (<MathFormula math="q=0" />), exponential Shannon (<MathFormula math="q=1" />), and inverse Simpson (<MathFormula math="q=2" />) with 95% bootstrap CIs
             </p>
           </div>
-          <div style={{ background: "#ecfdf5", border: "1px solid #a7f3d0", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", color: "#065f46", fontWeight: 600 }}>
-            999 Multinomial Bootstrap Replicates
+          <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+            {isMulti && (
+              <div style={{ display: "flex", gap: "4px", background: "#f1f5f9", padding: "4px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                <button
+                  onClick={() => setSelectedAlphaSample("all")}
+                  style={{
+                    padding: "4px 10px",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    borderRadius: "6px",
+                    border: "none",
+                    cursor: "pointer",
+                    background: selectedAlphaSample === "all" ? "#3b82f6" : "transparent",
+                    color: selectedAlphaSample === "all" ? "#ffffff" : "#64748b"
+                  }}
+                >
+                  All Samples (Mean)
+                </button>
+                {data.map(d => (
+                  <button
+                    key={d.sample}
+                    onClick={() => setSelectedAlphaSample(d.sample)}
+                    style={{
+                      padding: "4px 10px",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      borderRadius: "6px",
+                      border: "none",
+                      cursor: "pointer",
+                      background: selectedAlphaSample === d.sample ? "#3b82f6" : "transparent",
+                      color: selectedAlphaSample === d.sample ? "#ffffff" : "#64748b"
+                    }}
+                  >
+                    {d.sample}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div style={{ background: "#ecfdf5", border: "1px solid #a7f3d0", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", color: "#065f46", fontWeight: 600 }}>
+              999 Multinomial Bootstrap Replicates
+            </div>
           </div>
         </div>
 
@@ -661,10 +736,10 @@ const Results = ({ currentRunId }) => {
               <MathFormula math="({}^0D = S)" />
             </div>
             <div style={{ fontSize: "28px", fontWeight: 700, color: "#1e293b", margin: "6px 0" }}>
-              {primarySample.hill_q0 ?? primarySample.richness ?? 0}
+              {targetSample.hill_q0 ?? 0}
             </div>
             <div style={{ fontSize: "11px", color: "#3b82f6", fontWeight: 600 }}>
-              {primarySample.hill_q0_ci ? `95% CI: [${primarySample.hill_q0_ci[0]}, ${primarySample.hill_q0_ci[1]}]` : "q=0 (all taxa weighted equally)"}
+              {targetSample.subtitle_q0}
             </div>
             <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "4px" }}>Counts observed taxa without abundance bias</div>
           </div>
@@ -675,10 +750,10 @@ const Results = ({ currentRunId }) => {
               <MathFormula math="({}^1D = e^{H'})" />
             </div>
             <div style={{ fontSize: "28px", fontWeight: 700, color: "#10b981", margin: "6px 0" }}>
-              {primarySample.hill_q1 ?? Number(Math.exp(primarySample.shannon || 0)).toFixed(2)}
+              {targetSample.hill_q1 ?? 0}
             </div>
             <div style={{ fontSize: "11px", color: "#059669", fontWeight: 600 }}>
-              {primarySample.hill_q1_ci ? `95% CI: [${primarySample.hill_q1_ci[0]}, ${primarySample.hill_q1_ci[1]}]` : `Raw H' = ${primarySample.shannon}`}
+              {targetSample.subtitle_q1}
             </div>
             <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "4px" }}>Taxa weighted proportional to their natural relative frequency</div>
           </div>
@@ -689,10 +764,10 @@ const Results = ({ currentRunId }) => {
               <MathFormula math="({}^2D = \frac{1}{\sum p_i^2})" />
             </div>
             <div style={{ fontSize: "28px", fontWeight: 700, color: "#8b5cf6", margin: "6px 0" }}>
-              {primarySample.hill_q2 ?? 0}
+              {targetSample.hill_q2 ?? 0}
             </div>
             <div style={{ fontSize: "11px", color: "#7c3aed", fontWeight: 600 }}>
-              {primarySample.hill_q2_ci ? `95% CI: [${primarySample.hill_q2_ci[0]}, ${primarySample.hill_q2_ci[1]}]` : `Gini-Simpson = ${primarySample.simpson}`}
+              {targetSample.subtitle_q2}
             </div>
             <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "4px" }}>Weighted toward dominant and abundant organisms</div>
           </div>
@@ -703,15 +778,10 @@ const Results = ({ currentRunId }) => {
               <MathFormula math="(J = \frac{H'}{\ln S})" />
             </div>
             <div style={{ fontSize: "28px", fontWeight: 700, color: "#f59e0b", margin: "6px 0" }}>
-              {primarySample.pielou_j ?? 1.0}
+              {targetSample.pielou_j ?? 1.0}
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "4px" }}>
-              <div style={{ flex: 1, height: "6px", background: "#f1f5f9", borderRadius: "3px", overflow: "hidden" }}>
-                <div style={{ width: `${Math.min(100, (primarySample.pielou_j || 0.8) * 100)}%`, height: "100%", background: "#f59e0b", borderRadius: "3px" }} />
-              </div>
-              <span style={{ fontSize: "11px", color: "#b45309", fontWeight: 600 }}>
-                {(primarySample.pielou_j || 0) >= 0.8 ? "High Evenness" : "Uneven"}
-              </span>
+            <div style={{ fontSize: "11px", color: "#b45309", fontWeight: 600, marginTop: "4px" }}>
+              {targetSample.subtitle_j}
             </div>
             <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "4px" }}>Quantifies equitable representation (0 = dominated, 1 = uniform)</div>
           </div>
@@ -923,25 +993,36 @@ const Results = ({ currentRunId }) => {
                   layout={{
                     height: 460,
                     autosize: true,
-                    margin: { t: 30, r: 30, b: 60, l: 70 },
+                    margin: { t: 50, r: 40, b: 60, l: 70 },
                     paper_bgcolor: "transparent",
                     plot_bgcolor: "rgba(248,250,252,0.8)",
+                    hovermode: "closest",
+                    hoverlabel: {
+                      namelength: 0,
+                      bgcolor: "#1e293b",
+                      bordercolor: "#334155",
+                      font: { color: "#ffffff", size: 12, family: "Inter, sans-serif" },
+                      align: "left"
+                    },
                     xaxis: {
                       title: `PC1 (${pc1_var}% variance explained)`,
                       zeroline: true,
                       zerolinecolor: "#cbd5e1",
-                      gridcolor: "#f1f5f9"
+                      gridcolor: "#f1f5f9",
+                      automargin: true,
                     },
                     yaxis: {
                       title: `PC2 (${pc2_var}% variance explained)`,
                       zeroline: true,
                       zerolinecolor: "#cbd5e1",
-                      gridcolor: "#f1f5f9"
+                      gridcolor: "#f1f5f9",
+                      automargin: true,
+                      range: activePcoaList.length === 2 ? [-0.5, 0.5] : undefined,
                     },
                     font: { family: "Inter, sans-serif", color: "#374151" }
                   }}
                   style={{ width: "100%", height: "100%" }}
-                  config={{ responsive: true, displaylogo: false, toImageButtonOptions: { format: "svg", filename: "pcoa_ordination" } }}
+                  config={{ responsive: true, displaylogo: false, displayModeBar: "hover", toImageButtonOptions: { format: "svg", filename: "pcoa_ordination" } }}
                 />
               )}
             </div>
@@ -1609,17 +1690,24 @@ const Results = ({ currentRunId }) => {
                       layout={{
                         height: 540,
                         autosize: true,
-                        margin: { t: 20, r: 20, b: umapColorMode === "novelty" ? 40 : 80, l: 60 },
+                        margin: { t: 50, r: 40, b: umapColorMode === "novelty" ? 50 : 80, l: 60 },
                         paper_bgcolor: "transparent",
                         plot_bgcolor: "rgba(248,250,252,0.7)",
-                        xaxis: { title: "UMAP Dimension 1", gridcolor: "rgba(0,0,0,0.06)", zerolinecolor: "rgba(0,0,0,0.12)" },
-                        yaxis: { title: "UMAP Dimension 2", gridcolor: "rgba(0,0,0,0.06)", zerolinecolor: "rgba(0,0,0,0.12)" },
+                        hovermode: "closest",
+                        hoverlabel: {
+                          namelength: 0,
+                          bgcolor: "#1e293b",
+                          bordercolor: "#334155",
+                          font: { color: "#ffffff", size: 12, family: "Inter, sans-serif" },
+                          align: "left"
+                        },
+                        xaxis: { title: "UMAP Dimension 1", gridcolor: "rgba(0,0,0,0.06)", zerolinecolor: "rgba(0,0,0,0.12)", automargin: true },
+                        yaxis: { title: "UMAP Dimension 2", gridcolor: "rgba(0,0,0,0.06)", zerolinecolor: "rgba(0,0,0,0.12)", automargin: true },
                         legend: umapColorMode === "novelty" ? undefined : { orientation: "h", y: -0.2, font: { size: 11 }, bgcolor: "rgba(255,255,255,0.9)", itemsizing: "constant" },
-                        hoverlabel: { namelength: 0, font: { size: 12, family: "Inter, sans-serif" } },
                         font: { family: "Inter, sans-serif", color: "#374151" }
                       }}
                       style={{ width: "100%", height: "100%" }}
-                      config={{ responsive: true, displaylogo: false, toImageButtonOptions: { format: "svg", filename: "umap_clusters" } }}
+                      config={{ responsive: true, displaylogo: false, displayModeBar: "hover", toImageButtonOptions: { format: "svg", filename: "umap_clusters" } }}
                     />
                   );
                 })()
@@ -2059,9 +2147,9 @@ const Results = ({ currentRunId }) => {
               </thead>
               <tbody>
                 {(researchStats.noveltyDecomp?.candidates || [
-                  { asv_id: "SRR36836627.12", overall_novelty_score: 0.874, classification: "High-confidence Novel Candidate", evidence: { embedding_distance_percentile: 98.7, vae_anomaly_percentile: 94.1, diamond_identity_pct: 58.0, phylogenetic_branch_depth: 0.443, taxonomic_resolution: "Unresolved below Family" } },
-                  { asv_id: "SRR36836627.35", overall_novelty_score: 0.762, classification: "High-confidence Novel Candidate", evidence: { embedding_distance_percentile: 94.2, vae_anomaly_percentile: 89.5, diamond_identity_pct: 63.4, phylogenetic_branch_depth: 0.392, taxonomic_resolution: "Unresolved below Family" } },
-                  { asv_id: "SRR36836627.81", overall_novelty_score: 0.518, classification: "Divergent Lineage Candidate", evidence: { embedding_distance_percentile: 78.4, vae_anomaly_percentile: 72.0, diamond_identity_pct: 75.2, phylogenetic_branch_depth: 0.283, taxonomic_resolution: "Resolved to Genus" } },
+                  { asv_id: "SRR36836627.12", overall_novelty_score: 0.874, classification: "High Novelty", evidence: { embedding_distance_percentile: 98.7, vae_anomaly_percentile: 94.1, diamond_identity_pct: 58.0, phylogenetic_branch_depth: 0.443, taxonomic_resolution: "Unresolved below Family" } },
+                  { asv_id: "SRR36836627.35", overall_novelty_score: 0.762, classification: "High Novelty", evidence: { embedding_distance_percentile: 94.2, vae_anomaly_percentile: 89.5, diamond_identity_pct: 63.4, phylogenetic_branch_depth: 0.392, taxonomic_resolution: "Unresolved below Family" } },
+                  { asv_id: "SRR36836627.81", overall_novelty_score: 0.518, classification: "Divergent Lineage", evidence: { embedding_distance_percentile: 78.4, vae_anomaly_percentile: 72.0, diamond_identity_pct: 75.2, phylogenetic_branch_depth: 0.283, taxonomic_resolution: "Resolved to Genus" } },
                 ]).map((c, i) => (
                   <tr key={i}>
                     <td style={{ fontWeight: 600, color: "#1e293b", fontFamily: "monospace" }}>{c.asv_id}</td>
@@ -2077,7 +2165,10 @@ const Results = ({ currentRunId }) => {
                     <td style={{ fontSize: "12px", color: "#64748b" }}>{c.evidence?.taxonomic_resolution}</td>
                     <td>
                       <span className="status-badge" style={{ background: c.overall_novelty_score >= 0.7 ? "#fee2e2" : "#fef3c7", color: c.overall_novelty_score >= 0.7 ? "#b91c1c" : "#92400e" }}>
-                        {c.classification}
+                        {(c.classification || "")
+                          .replace(/High-confidence Novel Candidate/i, "High Novelty")
+                          .replace(/Divergent Lineage Candidate/i, "Divergent Lineage")
+                          .replace(/Known Variant \/ Homolog/i, "Known Homolog")}
                       </span>
                     </td>
                   </tr>
