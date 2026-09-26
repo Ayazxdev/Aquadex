@@ -63,13 +63,15 @@ const Run = ({ onNavigate, setCurrentRunId }) => {
     files.forEach(file => formData.append('files', file));
 
     try {
+      console.log(`[Run] Sending upload to: ${API_BASE}/upload`);
       const response = await fetch(`${API_BASE}/upload`, {
         method: 'POST',
         body: formData,
       });
       if (!response.ok) {
         const errText = await response.text();
-        setStatus(`Upload failed (${response.status}): ${errText}`);
+        console.error(`[Run] Upload to ${API_BASE}/upload failed with status ${response.status}:`, errText);
+        setStatus(`Upload failed (${response.status} from ${API_BASE}/upload): ${errText || 'Endpoint returned error'}`);
         return;
       }
       const result = await response.json();
@@ -83,7 +85,8 @@ const Run = ({ onNavigate, setCurrentRunId }) => {
       setCurrentRunId(serverRunId);
       setStatus(`Files uploaded: ${(result.saved_files || []).join(', ')}`);
     } catch (error) {
-      setStatus(`Upload error: ${error.message}`);
+      console.error(`[Run] Network or upload error connecting to ${API_BASE}/upload:`, error);
+      setStatus(`Upload error (${API_BASE}/upload): ${error.message}. Please verify backend is live.`);
     } finally {
       setIsUploading(false);
     }

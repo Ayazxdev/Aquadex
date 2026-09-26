@@ -6,7 +6,7 @@ from ..services.storage import ensure_run_dirs, out_dir
 from ..services.pipeline import start_pipeline, get_status
 from ..services import results as results_svc
 
-router = APIRouter(prefix="/api")
+router = APIRouter()
 
 
 @router.post("/upload", response_model=UploadResponse)

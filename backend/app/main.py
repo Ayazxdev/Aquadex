@@ -4,16 +4,22 @@ from .api.routes import router as api_router
 
 app = FastAPI(title="eDNA Backend", version="1.0.0")
 
-# CORS: allow Vite dev server and same-origin
+# CORS: allow all origins and Vercel domains
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "*"],
+    allow_origin_regex=r"https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Support both /api/* and root /* so any URL configuration works seamlessly
+app.include_router(api_router, prefix="/api")
 app.include_router(api_router)
+
+@app.get("/")
+def root():
+    return {"ok": True, "service": "AQUADEX eDNA Backend", "health": "/health", "api": "/api"}
 
 @app.get("/health")
 def health():
