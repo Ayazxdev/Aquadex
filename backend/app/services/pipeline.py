@@ -347,43 +347,59 @@ def _create_demo_outputs(run_id: str, marker: str = "18S", read_type: str = "sho
 
     marker_upper = (marker or "18S").upper()
     
-    # Generate dynamic taxonomy TSVs for EVERY uploaded file
+    # ── Taxonomy (Marker-Specific for N Uploaded Samples) ──
+    tax_dir = od / "taxonomy"
+    tax_dir.mkdir(parents=True, exist_ok=True)
+
+    marker_upper = (marker or "18S").upper()
+    import random
+    import zlib
+    from collections import Counter
+
+    if "18S" in marker_upper:
+        taxa_pool = [
+            ("ASV_001", "k__Eukaryota;p__Dinoflagellata;c__Dinophyceae;o__Gymnodiniales;f__Gymnodiniaceae;g__Gymnodinium"),
+            ("ASV_002", "k__Eukaryota;p__Bacillariophyta;c__Bacillariophyceae;o__Naviculales;f__Naviculaceae;g__Navicula"),
+            ("ASV_003", "k__Eukaryota;p__Chlorophyta;c__Mamiellophyceae;o__Mamiellales;f__Mamiellaceae;g__Micromonas"),
+            ("ASV_004", "k__Eukaryota;p__Ciliophora;c__Spirotrichea;o__Choreotrichida;f__Tintinnidiidae;g__Tintinnidium"),
+            ("ASV_005", "k__Eukaryota;p__Haptophyta;c__Prymnesiophyceae;o__Isochrysidales;f__Noelaerhabdaceae;g__Emiliania"),
+            ("ASV_006", "k__Eukaryota;p__Ochrophyta;c__Pelagophyceae;o__Pelagomonadales;f__Pelagomonadaceae;g__Pelagomonas"),
+            ("ASV_007", "k__Eukaryota;p__Arthropoda;c__Copepoda;o__Calanoida;f__Calanidae;g__Calanus"),
+            ("ASV_008", "k__Eukaryota;p__Cnidaria;c__Hydrozoa;o__Siphonophorae;f__Diphyidae;g__Diphyes"),
+            ("ASV_009", "k__Eukaryota;p__Bacillariophyta;c__Mediophyceae;o__Thalassiosirales;f__Thalassiosiraceae;g__Thalassiosira"),
+            ("ASV_010", "k__Eukaryota;p__Dinoflagellata;c__Dinophyceae;o__Suessiales;f__Symbiodiniaceae;g__Symbiodinium"),
+            ("ASV_011", "k__Eukaryota;p__Ascomycota;c__Saccharomycetes;o__Saccharomycetales;f__Saccharomycetaceae;g__Candida"),
+            ("ASV_012", "Unclassified Marine Eukaryote ASV"),
+        ]
+    else:
+        taxa_pool = [
+            ("ASV_001", "k__Bacteria;p__Proteobacteria;c__Gammaproteobacteria;o__Alteromonadales;f__Alteromonadaceae;g__Alteromonas"),
+            ("ASV_002", "k__Bacteria;p__Bacteroidetes;c__Flavobacteriia;o__Flavobacteriales;f__Flavobacteriaceae;g__Flavobacterium"),
+            ("ASV_003", "k__Bacteria;p__Cyanobacteria;c__Cyanophyceae;o__Synechococcales;f__Synechococcaceae;g__Synechococcus"),
+            ("ASV_004", "k__Bacteria;p__Proteobacteria;c__Alphaproteobacteria;o__Pelagibacterales;f__Pelagibacteraceae;g__Pelagibacter"),
+            ("ASV_005", "k__Bacteria;p__Firmicutes;c__Bacilli;o__Bacillales;f__Bacillaceae;g__Bacillus"),
+            ("ASV_006", "k__Bacteria;p__Actinobacteria;c__Acidimicrobiia;o__Acidimicrobiales;f__Microtrichaceae;g__Ilumatobacter"),
+            ("ASV_007", "k__Bacteria;p__Planctomycetes;c__Planctomycetia;o__Pirellulales;f__Pirellulaceae;g__Blastopirellula"),
+            ("ASV_008", "k__Bacteria;p__Verrucomicrobia;c__Verrucomicrobiae;o__Verrucomicrobiales;f__Verrucomicrobiaceae;g__Rubritalea"),
+            ("ASV_009", "k__Bacteria;p__Proteobacteria;c__Deltaproteobacteria;o__Desulfobacterales;f__Desulfobacteraceae;g__Desulfobacter"),
+            ("ASV_010", "k__Bacteria;p__Chloroflexi;c__Anaerolineae;o__Anaerolineales;f__Anaerolineaceae;g__Anaerolinea"),
+            ("ASV_011", "k__Bacteria;p__Acidobacteria;c__Vicinamibacteria;o__Vicinamibacterales;f__Vicinamibacteraceae;g__Luteitalea"),
+            ("ASV_012", "Unclassified Marine Bacterium"),
+        ]
+
+    # Generate dynamic taxonomy TSVs for EVERY uploaded file using sample-specific seeding
     for s_idx, f_info in enumerate(all_files_info):
         s_name = f_info["sample_name"]
-        mult = 1.0 + (s_idx * 0.15 - 0.05 * (s_idx % 3))
+        s_seed = zlib.crc32(s_name.encode("utf-8")) & 0xffffffff
+        s_rnd = random.Random(s_seed)
+
+        tax_rows = ["ASV_ID\ttaxon\tabundance"]
+        num_taxa = s_rnd.randint(8, len(taxa_pool))
+        chosen_taxa = s_rnd.sample(taxa_pool, num_taxa)
         
-        if "18S" in marker_upper:
-            tax_rows = [
-                "ASV_ID\ttaxon\tabundance",
-                f"ASV_001\tk__Eukaryota;p__Dinoflagellata;c__Dinophyceae;o__Gymnodiniales;f__Gymnodiniaceae;g__Gymnodinium\t{int(1420 * mult)}",
-                f"ASV_002\tk__Eukaryota;p__Bacillariophyta;c__Bacillariophyceae;o__Naviculales;f__Naviculaceae;g__Navicula\t{int(1180 * mult)}",
-                f"ASV_003\tk__Eukaryota;p__Chlorophyta;c__Mamiellophyceae;o__Mamiellales;f__Mamiellaceae;g__Micromonas\t{int(950 * mult)}",
-                f"ASV_004\tk__Eukaryota;p__Ciliophora;c__Spirotrichea;o__Choreotrichida;f__Tintinnidiidae;g__Tintinnidium\t{int(780 * mult)}",
-                f"ASV_005\tk__Eukaryota;p__Haptophyta;c__Prymnesiophyceae;o__Isochrysidales;f__Noelaerhabdaceae;g__Emiliania\t{int(690 * mult)}",
-                f"ASV_006\tk__Eukaryota;p__Ochrophyta;c__Pelagophyceae;o__Pelagomonadales;f__Pelagomonadaceae;g__Pelagomonas\t{int(540 * mult)}",
-                f"ASV_007\tk__Eukaryota;p__Arthropoda;c__Copepoda;o__Calanoida;f__Calanidae;g__Calanus\t{int(480 * mult)}",
-                f"ASV_008\tk__Eukaryota;p__Cnidaria;c__Hydrozoa;o__Siphonophorae;f__Diphyidae;g__Diphyes\t{int(410 * mult)}",
-                f"ASV_009\tk__Eukaryota;p__Bacillariophyta;c__Mediophyceae;o__Thalassiosirales;f__Thalassiosiraceae;g__Thalassiosira\t{int(360 * mult)}",
-                f"ASV_010\tk__Eukaryota;p__Dinoflagellata;c__Dinophyceae;o__Suessiales;f__Symbiodiniaceae;g__Symbiodinium\t{int(310 * mult)}",
-                f"ASV_011\tk__Eukaryota;p__Ascomycota;c__Saccharomycetes;o__Saccharomycetales;f__Saccharomycetaceae;g__Candida\t{int(260 * mult)}",
-                f"ASV_012\tUnclassified Marine Eukaryote ASV\t{int(220 * mult)}",
-            ]
-        else:
-            tax_rows = [
-                "ASV_ID\ttaxon\tabundance",
-                f"ASV_001\tk__Bacteria;p__Proteobacteria;c__Gammaproteobacteria;o__Alteromonadales;f__Alteromonadaceae;g__Alteromonas\t{int(1350 * mult)}",
-                f"ASV_002\tk__Bacteria;p__Bacteroidetes;c__Flavobacteriia;o__Flavobacteriales;f__Flavobacteriaceae;g__Flavobacterium\t{int(1120 * mult)}",
-                f"ASV_003\tk__Bacteria;p__Cyanobacteria;c__Cyanophyceae;o__Synechococcales;f__Synechococcaceae;g__Synechococcus\t{int(890 * mult)}",
-                f"ASV_004\tk__Bacteria;p__Proteobacteria;c__Alphaproteobacteria;o__Pelagibacterales;f__Pelagibacteraceae;g__Pelagibacter\t{int(760 * mult)}",
-                f"ASV_005\tk__Bacteria;p__Firmicutes;c__Bacilli;o__Bacillales;f__Bacillaceae;g__Bacillus\t{int(620 * mult)}",
-                f"ASV_006\tk__Bacteria;p__Actinobacteria;c__Acidimicrobiia;o__Acidimicrobiales;f__Microtrichaceae;g__Ilumatobacter\t{int(510 * mult)}",
-                f"ASV_007\tk__Bacteria;p__Planctomycetes;c__Planctomycetia;o__Pirellulales;f__Pirellulaceae;g__Blastopirellula\t{int(430 * mult)}",
-                f"ASV_008\tk__Bacteria;p__Verrucomicrobia;c__Verrucomicrobiae;o__Verrucomicrobiales;f__Verrucomicrobiaceae;g__Rubritalea\t{int(380 * mult)}",
-                f"ASV_009\tk__Bacteria;p__Proteobacteria;c__Deltaproteobacteria;o__Desulfobacterales;f__Desulfobacteraceae;g__Desulfobacter\t{int(320 * mult)}",
-                f"ASV_010\tk__Bacteria;p__Chloroflexi;c__Anaerolineae;o__Anaerolineales;f__Anaerolineaceae;g__Anaerolinea\t{int(270 * mult)}",
-                f"ASV_011\tk__Bacteria;p__Acidobacteria;c__Vicinamibacteria;o__Vicinamibacterales;f__Vicinamibacteraceae;g__Luteitalea\t{int(230 * mult)}",
-                f"ASV_012\tUnclassified Marine Bacterium\t{int(190 * mult)}",
-            ]
+        for asv_id, taxon_str in chosen_taxa:
+            cnt = s_rnd.randint(150, 2800)
+            tax_rows.append(f"{asv_id}\t{taxon_str}\t{cnt}")
         
         (tax_dir / f"{s_name}_taxonomy.tsv").write_text("\n".join(tax_rows))
 
@@ -444,8 +460,11 @@ def _create_demo_outputs(run_id: str, marker: str = "18S", read_type: str = "sho
     # ── Clustering (UMAP + HDBSCAN style) ──
     clust_dir = od / "clustering"
     clust_dir.mkdir(parents=True, exist_ok=True)
-    import random
-    random.seed(42)
+    
+    # Use run_id seed for run-specific UMAP coordinate scattering
+    run_seed = zlib.crc32(run_id.encode("utf-8")) & 0xffffffff
+    run_rnd = random.Random(run_seed)
+
     clust_rows = ["ASV_ID\tcluster_id\tdim_1\tdim_2\tnovelty_score\tcluster_size"]
     cluster_map = {
         "ASV_001": 0, "ASV_002": 0, "ASV_003": 1, "ASV_004": 2,
@@ -453,16 +472,26 @@ def _create_demo_outputs(run_id: str, marker: str = "18S", read_type: str = "sho
         "ASV_009": 2, "ASV_010": 3, "ASV_011": 3, "ASV_012": -1,
     }
     novelty_map = {
-        "ASV_001": 0.95, "ASV_002": 0.87, "ASV_003": 0.42, "ASV_004": 0.78,
-        "ASV_005": 0.89, "ASV_006": 0.83, "ASV_007": 0.35, "ASV_008": 0.91,
-        "ASV_009": 0.88, "ASV_010": 0.82, "ASV_011": 0.90, "ASV_012": 0.96,
+        "ASV_001": round(run_rnd.uniform(0.85, 0.98), 2),
+        "ASV_002": round(run_rnd.uniform(0.75, 0.92), 2),
+        "ASV_003": round(run_rnd.uniform(0.15, 0.45), 2),
+        "ASV_004": round(run_rnd.uniform(0.65, 0.85), 2),
+        "ASV_005": round(run_rnd.uniform(0.35, 0.60), 2),
+        "ASV_006": round(run_rnd.uniform(0.70, 0.90), 2),
+        "ASV_007": round(run_rnd.uniform(0.20, 0.50), 2),
+        "ASV_008": round(run_rnd.uniform(0.80, 0.96), 2),
+        "ASV_009": round(run_rnd.uniform(0.75, 0.94), 2),
+        "ASV_010": round(run_rnd.uniform(0.20, 0.45), 2),
+        "ASV_011": round(run_rnd.uniform(0.82, 0.95), 2),
+        "ASV_012": round(run_rnd.uniform(0.92, 0.99), 2),
     }
-    # Count cluster sizes
-    from collections import Counter
+
     sizes = Counter(cluster_map.values())
     for asv, cid in cluster_map.items():
-        x = random.gauss(cid * 3.0, 0.8)
-        y = random.gauss(cid * 2.5 + 1, 0.6)
+        base_x = cid * 3.2 + run_rnd.uniform(-1.2, 1.2)
+        base_y = cid * 2.0 + run_rnd.uniform(-1.0, 1.0)
+        x = run_rnd.gauss(base_x, 0.6)
+        y = run_rnd.gauss(base_y, 0.5)
         clust_rows.append(f"{asv}\t{cid}\t{x:.4f}\t{y:.4f}\t{novelty_map[asv]}\t{sizes[cid]}")
     (clust_dir / "clusters.tsv").write_text("\n".join(clust_rows))
 
