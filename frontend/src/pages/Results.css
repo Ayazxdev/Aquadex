@@ -1511,3 +1511,62 @@
   margin: 0;
   line-height: 1.5;
 }
+
+/* Math Formula and Scientific Requirement Notice Cards */
+.math-formula {
+  font-family: "KaTeX_Main", "Times New Roman", serif;
+  vertical-align: middle;
+}
+
+.math-formula .katex {
+  font-size: 1.05em;
+}
+
+.requirement-notice-card {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 36px 24px;
+  text-align: center;
+  margin-top: 16px;
+}
+
+.requirement-badge {
+  display: inline-block;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  padding: 4px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 12px;
+}
+
+.requirement-notice-card h3,
+.requirement-notice-card h4 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+}
+
+.requirement-notice-card p {
+  max-width: 650px;
+  margin: 0 auto;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.math-explainer {
+  margin: 16px auto;
+  display: inline-block;
+  padding: 10px 24px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}

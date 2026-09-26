@@ -8,6 +8,7 @@ import { ResponsiveScatterPlot } from "@nivo/scatterplot";
 import { ResponsiveSankey } from "@nivo/sankey";
 import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
 import Plot from "react-plotly.js";
+import MathFormula from "../components/MathFormula";
 
 const renderQCPanel = (qcChartData) => {
   if (!qcChartData) {
@@ -632,8 +633,8 @@ const Results = ({ currentRunId }) => {
         <div className="chart-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "10px" }}>
           <div>
             <h3 className="chart-title">Hill Diversity Series Profile &amp; Alpha Diversity</h3>
-            <p className="chart-description">
-              Unified framework: <sup>q</sup>D = (Σ p<sub>i</sub><sup>q</sup>)<sup>1/(1-q)</sup> connecting richness (q=0), exponential Shannon (q=1), inverse Simpson (q=2), with 95% bootstrap CIs
+            <p className="chart-description" style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", margin: "6px 0 0" }}>
+              Unified framework: <MathFormula math="{}^qD = \left(\sum_{i=1}^S p_i^q\right)^{\frac{1}{1-q}}" /> connecting richness (<MathFormula math="q=0" />), exponential Shannon (<MathFormula math="q=1" />), and inverse Simpson (<MathFormula math="q=2" />) with 95% bootstrap CIs
             </p>
           </div>
           <div style={{ background: "#ecfdf5", border: "1px solid #a7f3d0", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", color: "#065f46", fontWeight: 600 }}>
@@ -644,7 +645,10 @@ const Results = ({ currentRunId }) => {
         {/* Hill Diversity Metric Cards */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px" }}>
           <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-            <div style={{ fontSize: "12px", color: "#64748b", fontWeight: 600, textTransform: "uppercase" }}>Species Richness (<sup>0</sup>D = S)</div>
+            <div style={{ fontSize: "12px", color: "#64748b", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+              <span>SPECIES RICHNESS</span>
+              <MathFormula math="({}^0D = S)" />
+            </div>
             <div style={{ fontSize: "28px", fontWeight: 700, color: "#1e293b", margin: "6px 0" }}>
               {primarySample.hill_q0 ?? primarySample.richness ?? 0}
             </div>
@@ -655,7 +659,10 @@ const Results = ({ currentRunId }) => {
           </div>
 
           <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-            <div style={{ fontSize: "12px", color: "#64748b", fontWeight: 600, textTransform: "uppercase" }}>Effective Shannon (<sup>1</sup>D = exp(H'))</div>
+            <div style={{ fontSize: "12px", color: "#64748b", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+              <span>EFFECTIVE SHANNON</span>
+              <MathFormula math="({}^1D = e^{H'})" />
+            </div>
             <div style={{ fontSize: "28px", fontWeight: 700, color: "#10b981", margin: "6px 0" }}>
               {primarySample.hill_q1 ?? Number(Math.exp(primarySample.shannon || 0)).toFixed(2)}
             </div>
@@ -666,7 +673,10 @@ const Results = ({ currentRunId }) => {
           </div>
 
           <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-            <div style={{ fontSize: "12px", color: "#64748b", fontWeight: 600, textTransform: "uppercase" }}>Effective Simpson (<sup>2</sup>D = 1/Σp²)</div>
+            <div style={{ fontSize: "12px", color: "#64748b", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+              <span>EFFECTIVE SIMPSON</span>
+              <MathFormula math="({}^2D = \frac{1}{\sum p_i^2})" />
+            </div>
             <div style={{ fontSize: "28px", fontWeight: 700, color: "#8b5cf6", margin: "6px 0" }}>
               {primarySample.hill_q2 ?? 0}
             </div>
@@ -677,7 +687,10 @@ const Results = ({ currentRunId }) => {
           </div>
 
           <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-            <div style={{ fontSize: "12px", color: "#64748b", fontWeight: 600, textTransform: "uppercase" }}>Pielou's Evenness (J = H'/ln S)</div>
+            <div style={{ fontSize: "12px", color: "#64748b", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+              <span>PIELOU'S EVENNESS</span>
+              <MathFormula math="(J = \frac{H'}{\ln S})" />
+            </div>
             <div style={{ fontSize: "28px", fontWeight: 700, color: "#f59e0b", margin: "6px 0" }}>
               {primarySample.pielou_j ?? 1.0}
             </div>
@@ -696,13 +709,14 @@ const Results = ({ currentRunId }) => {
         {/* Comparative Hill Diversity Bars Across Samples */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px", width: "100%" }}>
           {[
-            { key: "hill_q0", label: "q=0: Species Richness", color: "#3b82f6", format: ">-.0f" },
-            { key: "hill_q1", label: "q=1: Exponential Shannon", color: "#10b981", format: ">-.2f" },
-            { key: "hill_q2", label: "q=2: Inverse Simpson", color: "#8b5cf6", format: ">-.2f" },
-          ].map(({ key, label, color, format }) => (
+            { key: "hill_q0", label: "Species Richness", math: "{}^0D = S", color: "#3b82f6", format: ">-.0f" },
+            { key: "hill_q1", label: "Exponential Shannon", math: "{}^1D = e^{H'}", color: "#10b981", format: ">-.2f" },
+            { key: "hill_q2", label: "Inverse Simpson", math: "{}^2D = \\frac{1}{\\sum p_i^2}", color: "#8b5cf6", format: ">-.2f" },
+          ].map(({ key, label, math, color, format }) => (
             <div key={key} style={{ background: "white", border: "1px solid #e5e7eb", borderRadius: "8px", padding: "16px", minHeight: "240px" }}>
-              <h4 style={{ textAlign: "center", fontSize: "13px", color: "#374151", margin: "0 0 10px 0", fontWeight: 600 }}>
-                {label}
+              <h4 style={{ textAlign: "center", fontSize: "13px", color: "#374151", margin: "0 0 10px 0", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                <span>{label}</span>
+                <MathFormula math={math} />
               </h4>
               <div style={{ height: "180px" }}>
                 <ResponsiveBar
@@ -741,6 +755,11 @@ const Results = ({ currentRunId }) => {
     const coverage = researchStats.coverage || {};
     const diffAbund = researchStats.diffAbund || {};
     const occupancy = researchStats.occupancy || {};
+
+    const detectedSamples = (alphaDataLive && alphaDataLive.length > 0)
+      ? alphaDataLive.map(a => a.sample)
+      : (coverage.samples || []).map(s => s.sample);
+    const isMultiSample = detectedSamples.length >= 2;
 
     const brayPcoa = beta.bray_curtis?.pcoa || [];
     const aitchisonPcoa = beta.aitchison?.pcoa || [];
@@ -803,8 +822,8 @@ const Results = ({ currentRunId }) => {
             <div className="chart-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "10px" }}>
               <div>
                 <h3 className="chart-title">Principal Coordinates Analysis (PCoA Ordination)</h3>
-                <p className="chart-description">
-                  Classical PCoA (Gower 1966 eigendecomposition) showing true community separation with verified relative abundance normalization
+                <p className="chart-description" style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", margin: "4px 0 0" }}>
+                  Classical PCoA (Gower 1966 eigendecomposition) showing true community separation: <MathFormula math="B = -\frac{1}{2} H D^2 H, \quad B = V \Lambda V^T" />
                 </p>
               </div>
               <div style={{ display: "flex", gap: "6px", background: "#f1f5f9", padding: "4px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
@@ -856,10 +875,20 @@ const Results = ({ currentRunId }) => {
               </div>
             </div>
 
-            <div style={{ height: 480, minHeight: 480, width: "100%" }}>
-              {activePcoaList.length < 2 ? (
-                <div style={{ textAlign: "center", padding: "80px 20px", color: "#64748b" }}>
-                  PCoA ordination requires ≥ 2 comparative samples. Upload multiple fastq/fasta files to visualize ordination geometry.
+            <div style={{ minHeight: 380, width: "100%" }}>
+              {!isMultiSample || activePcoaList.length < 2 ? (
+                <div className="requirement-notice-card" style={{ margin: "30px auto", maxWidth: "620px" }}>
+                  <div className="requirement-badge">Requires ≥ 2 Comparative Samples</div>
+                  <h4>PCoA Multidimensional Ordination Geometry</h4>
+                  <p>
+                    Classical Principal Coordinates Analysis (PCoA / Gower 1966) projects sample dissimilarity matrices into Euclidean coordinates via spectral eigendecomposition. With an individual FASTQ library (N = 1), self-dissimilarity is identically zero and ordination separation cannot be computed.
+                  </p>
+                  <div className="math-explainer">
+                    <MathFormula math="B = -\frac{1}{2} H D^2 H, \quad Y = V \Lambda^{1/2}" block />
+                  </div>
+                  <p style={{ fontSize: "12px", color: "#94a3b8" }}>
+                    Upload 2 or more comparative samples to visualize ecological ordination geometry across Bray-Curtis, Aitchison CLR, and UniFrac distances.
+                  </p>
                 </div>
               ) : (
                 <Plot
@@ -919,86 +948,102 @@ const Results = ({ currentRunId }) => {
           <div className="chart-container" style={{ gridColumn: "1 / -1" }}>
             <div className="chart-header">
               <h3 className="chart-title">Statistical Inference: Community Hypotheses</h3>
-              <p className="chart-description">
-                Non-parametric multivariate analysis of variance (PERMANOVA) and homogeneity of multivariate dispersions (PERMDISP)
+              <p className="chart-description" style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", margin: "4px 0 0" }}>
+                Non-parametric multivariate analysis of variance (PERMANOVA) and homogeneity of multivariate dispersions (PERMDISP): <MathFormula math="F = \frac{SS_{\text{between}} / (g-1)}{SS_{\text{within}} / (N-g)}" />
               </p>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "20px", marginTop: "14px" }}>
-              {/* PERMANOVA Card */}
-              <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "20px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <h4 style={{ margin: 0, fontSize: "16px", color: "#1e293b", fontWeight: 700 }}>PERMANOVA (Anderson 2001)</h4>
-                  <span className="status-badge" style={{ background: "#eff6ff", color: "#1d4ed8" }}>adonis2 pseudo-F</span>
-                </div>
-                <p style={{ fontSize: "12px", color: "#64748b", margin: "8px 0 16px" }}>
-                  Tests whether community composition differs significantly between samples under permutation.
+            {!isMultiSample || permanova.pseudo_f === undefined ? (
+              <div className="requirement-notice-card">
+                <div className="requirement-badge">Requires ≥ 2 Comparative Samples</div>
+                <h4>Hypothesis Testing Unavailable for Single Library (N = 1)</h4>
+                <p>
+                  One-way PERMANOVA (Anderson 2001) and PERMDISP (Anderson 2006) test whether community composition differs significantly between groups and assess multivariate dispersion homogeneity. With a single FASTQ library, between-group vs within-group variance cannot be partitioned.
                 </p>
+                <div className="math-explainer">
+                  <MathFormula math="F = \frac{SS_{\text{between}} / (g-1)}{SS_{\text{within}} / (N-g)}" block />
+                </div>
+                <p style={{ marginTop: "10px", fontSize: "13px", color: "#64748b" }}>
+                  Upload 2 or more comparative samples to execute 999 permutation iterations and evaluate community hypothesis significance.
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "20px", marginTop: "14px" }}>
+                {/* PERMANOVA Card */}
+                <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "20px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <h4 style={{ margin: 0, fontSize: "16px", color: "#1e293b", fontWeight: 700 }}>PERMANOVA (Anderson 2001)</h4>
+                    <span className="status-badge" style={{ background: "#eff6ff", color: "#1d4ed8" }}>adonis2 pseudo-F</span>
+                  </div>
+                  <p style={{ fontSize: "12px", color: "#64748b", margin: "8px 0 16px" }}>
+                    Tests whether community composition differs significantly between sample groups under permutation.
+                  </p>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                  <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px" }}>
-                    <div style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}>Pseudo-F Statistic</div>
-                    <div style={{ fontSize: "22px", fontWeight: 700, color: "#1e293b", marginTop: "4px" }}>
-                      {permanova.pseudo_f !== undefined ? permanova.pseudo_f : "6.81"}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                    <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px" }}>
+                      <div style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}>Pseudo-F Statistic</div>
+                      <div style={{ fontSize: "22px", fontWeight: 700, color: "#1e293b", marginTop: "4px" }}>
+                        {permanova.pseudo_f}
+                      </div>
+                    </div>
+                    <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px" }}>
+                      <div style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}>R² Effect Size</div>
+                      <div style={{ fontSize: "22px", fontWeight: 700, color: "#3b82f6", marginTop: "4px" }}>
+                        {permanova.r_squared}
+                      </div>
+                    </div>
+                    <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px" }}>
+                      <div style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}>Permutation p-value</div>
+                      <div style={{ fontSize: "22px", fontWeight: 700, color: "#10b981", marginTop: "4px" }}>
+                        {permanova.p_value}
+                      </div>
+                    </div>
+                    <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px" }}>
+                      <div style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}>Permutations</div>
+                      <div style={{ fontSize: "22px", fontWeight: 700, color: "#64748b", marginTop: "4px" }}>
+                        {permanova.n_permutations || 999}
+                      </div>
                     </div>
                   </div>
-                  <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px" }}>
-                    <div style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}>R² Effect Size</div>
-                    <div style={{ fontSize: "22px", fontWeight: 700, color: "#3b82f6", marginTop: "4px" }}>
-                      {permanova.r_squared !== undefined ? permanova.r_squared : "0.31"}
-                    </div>
-                  </div>
-                  <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px" }}>
-                    <div style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}>Permutation p-value</div>
-                    <div style={{ fontSize: "22px", fontWeight: 700, color: "#10b981", marginTop: "4px" }}>
-                      {permanova.p_value !== undefined ? permanova.p_value : "0.002"}
-                    </div>
-                  </div>
-                  <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px" }}>
-                    <div style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}>Permutations</div>
-                    <div style={{ fontSize: "22px", fontWeight: 700, color: "#64748b", marginTop: "4px" }}>
-                      {permanova.n_permutations || 999}
-                    </div>
+
+                  <div style={{ marginTop: "14px", fontSize: "12px", color: "#475569", background: "#f0fdf4", border: "1px solid #bbf7d0", padding: "10px", borderRadius: "6px" }}>
+                    <strong>Interpretation:</strong> Proportion of community variation explained by sample grouping is R² = {permanova.r_squared} (p = {permanova.p_value}).
                   </div>
                 </div>
 
-                <div style={{ marginTop: "14px", fontSize: "12px", color: "#475569", background: "#f0fdf4", border: "1px solid #bbf7d0", padding: "10px", borderRadius: "6px" }}>
-                  <strong>Interpretation:</strong> Proportion of community variation explained by sample grouping is R² = {permanova.r_squared ?? 0.31} (p = {permanova.p_value ?? 0.002}).
+                {/* PERMDISP Card */}
+                <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "20px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <h4 style={{ margin: 0, fontSize: "16px", color: "#1e293b", fontWeight: 700 }}>PERMDISP (Anderson 2006)</h4>
+                    <span className="status-badge" style={{ background: permdisp.homogeneous ? "#ecfdf5" : "#fef2f2", color: permdisp.homogeneous ? "#065f46" : "#991b1b" }}>
+                      {permdisp.homogeneous ? "Homogeneous Dispersions" : "Heterogeneous"}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: "12px", color: "#64748b", margin: "8px 0 16px" }}>
+                    Multivariate Levene's test (`betadisper`) verifying that PERMANOVA significance is not driven by within-group variance differences.
+                  </p>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                    <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px" }}>
+                      <div style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}>Dispersion F-stat</div>
+                      <div style={{ fontSize: "22px", fontWeight: 700, color: "#1e293b", marginTop: "4px" }}>
+                        {permdisp.f_statistic}
+                      </div>
+                    </div>
+                    <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px" }}>
+                      <div style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}>Dispersion p-value</div>
+                      <div style={{ fontSize: "22px", fontWeight: 700, color: "#10b981", marginTop: "4px" }}>
+                        {permdisp.p_value}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: "14px", fontSize: "12px", color: "#475569", background: "#f8fafc", border: "1px solid #e2e8f0", padding: "10px", borderRadius: "6px" }}>
+                    <strong>Diagnostic Verdict:</strong> {permdisp.interpretation || "Homogeneous dispersions (group variances are equivalent; PERMANOVA differences reflect genuine community shifts)."}
+                  </div>
                 </div>
               </div>
-
-              {/* PERMDISP Card */}
-              <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "20px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <h4 style={{ margin: 0, fontSize: "16px", color: "#1e293b", fontWeight: 700 }}>PERMDISP (Anderson 2006)</h4>
-                  <span className="status-badge" style={{ background: permdisp.homogeneous ? "#ecfdf5" : "#fef2f2", color: permdisp.homogeneous ? "#065f46" : "#991b1b" }}>
-                    {permdisp.homogeneous ? "Homogeneous Dispersions" : "Heterogeneous"}
-                  </span>
-                </div>
-                <p style={{ fontSize: "12px", color: "#64748b", margin: "8px 0 16px" }}>
-                  Multivariate Levene's test (`betadisper`) verifying that PERMANOVA significance is not driven by within-group variance differences.
-                </p>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                  <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px" }}>
-                    <div style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}>Dispersion F-stat</div>
-                    <div style={{ fontSize: "22px", fontWeight: 700, color: "#1e293b", marginTop: "4px" }}>
-                      {permdisp.f_statistic !== undefined ? permdisp.f_statistic : "1.14"}
-                    </div>
-                  </div>
-                  <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px" }}>
-                    <div style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}>Dispersion p-value</div>
-                    <div style={{ fontSize: "22px", fontWeight: 700, color: "#10b981", marginTop: "4px" }}>
-                      {permdisp.p_value !== undefined ? permdisp.p_value : "0.342"}
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ marginTop: "14px", fontSize: "12px", color: "#475569", background: "#f8fafc", border: "1px solid #e2e8f0", padding: "10px", borderRadius: "6px" }}>
-                  <strong>Diagnostic Verdict:</strong> {permdisp.interpretation || "Homogeneous dispersions (group variances are equivalent; PERMANOVA differences reflect genuine community shifts)."}
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -1007,14 +1052,14 @@ const Results = ({ currentRunId }) => {
           <div className="chart-container" style={{ gridColumn: "1 / -1" }}>
             <div className="chart-header">
               <h3 className="chart-title">Phylogenetic Diversity (Faith's PD &amp; UniFrac)</h3>
-              <p className="chart-description">
-                Evolutionary biodiversity measured along branch lengths: Faith PD (alpha) and UniFrac (beta)
+              <p className="chart-description" style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", margin: "4px 0 0" }}>
+                Evolutionary biodiversity measured along branch lengths: Faith PD (alpha) and UniFrac (beta): <MathFormula math="PD(S) = \sum_{b \in B(S)} L_b" />
               </p>
             </div>
 
             {/* Faith's PD Cards */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "14px", marginTop: "14px" }}>
-              {(phylo.faith_pd || [{ sample: "sample1", faith_pd: 4.62, pd_ratio: 0.38, num_taxa: 12 }, { sample: "sample2", faith_pd: 4.15, pd_ratio: 0.34, num_taxa: 9 }]).map((item, idx) => (
+              {(phylo.faith_pd || []).map((item, idx) => (
                 <div key={idx} style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "16px" }}>
                   <div style={{ fontSize: "12px", color: "#64748b", fontWeight: 600 }}>{item.sample}</div>
                   <div style={{ fontSize: "26px", fontWeight: 700, color: "#0284c7", margin: "4px 0" }}>
@@ -1028,57 +1073,85 @@ const Results = ({ currentRunId }) => {
             </div>
 
             {/* UniFrac Distances Table */}
-            <div style={{ marginTop: "20px" }}>
-              <h4 style={{ fontSize: "14px", color: "#1e293b", marginBottom: "10px" }}>Pairwise UniFrac Community Evolutionary Distances</h4>
-              <table className="novelty-table" style={{ width: "100%" }}>
-                <thead>
-                  <tr>
-                    <th>Sample 1</th>
-                    <th>Sample 2</th>
-                    <th>Unweighted UniFrac (Qualitative)</th>
-                    <th>Weighted UniFrac (Abundance-Weighted)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {((phylo.unweighted_unifrac?.distances || []).length > 0 ? phylo.unweighted_unifrac.distances : [{ sample1: "sample1", sample2: "sample2", value: 0.285 }]).map((row, i) => {
-                    const weightedRow = (phylo.weighted_unifrac?.distances || [])[i] || { value: 0.194 };
-                    return (
-                      <tr key={i}>
-                        <td style={{ fontWeight: 600 }}>{row.sample1}</td>
-                        <td style={{ fontWeight: 600 }}>{row.sample2}</td>
-                        <td><span className="status-badge" style={{ background: "#e0f2fe", color: "#0369a1" }}>{row.value}</span></td>
-                        <td><span className="status-badge" style={{ background: "#f0fdf4", color: "#15803d" }}>{weightedRow.value}</span></td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              <div style={{ marginTop: "10px", fontSize: "11px", color: "#64748b" }}>
-                Source: {phylo.provenance?.tree_source || "EPA-ng / RAxML phylogenetic placement"} • Formula: {phylo.provenance?.faith_pd_formula || "PD(S) = Σ L_b"}
+            {!isMultiSample || (phylo.unweighted_unifrac?.distances || []).length === 0 ? (
+              <div className="requirement-notice-card" style={{ marginTop: "20px" }}>
+                <div className="requirement-badge" style={{ background: "#e0f2fe", color: "#0369a1", borderColor: "#bae6fd" }}>
+                  Requires ≥ 2 Samples
+                </div>
+                <h4>Pairwise UniFrac Community Evolutionary Distances</h4>
+                <p>
+                  UniFrac measures evolutionary branch divergence between two or more distinct microbial communities. With a single library (N = 1), self-dissimilarity is identically zero.
+                </p>
+                <div className="math-explainer">
+                  <MathFormula math="d_{\text{UniFrac}}(A, B) = \frac{\sum_b L_b |p_{A,b} - p_{B,b}|}{\sum_b L_b (p_{A,b} + p_{B,b})}" block />
+                </div>
+                <p style={{ marginTop: "10px", fontSize: "13px", color: "#64748b" }}>
+                  Upload 2 or more comparative samples to compute unweighted and weighted UniFrac distance matrices.
+                </p>
               </div>
-            </div>
+            ) : (
+              <div style={{ marginTop: "20px" }}>
+                <h4 style={{ fontSize: "14px", color: "#1e293b", marginBottom: "10px" }}>Pairwise UniFrac Community Evolutionary Distances</h4>
+                <table className="novelty-table" style={{ width: "100%" }}>
+                  <thead>
+                    <tr>
+                      <th>Sample 1</th>
+                      <th>Sample 2</th>
+                      <th>Unweighted UniFrac (Qualitative)</th>
+                      <th>Weighted UniFrac (Abundance-Weighted)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(phylo.unweighted_unifrac.distances).map((row, i) => {
+                      const weightedRow = (phylo.weighted_unifrac?.distances || [])[i] || {};
+                      return (
+                        <tr key={i}>
+                          <td style={{ fontWeight: 600 }}>{row.sample1}</td>
+                          <td style={{ fontWeight: 600 }}>{row.sample2}</td>
+                          <td><span className="status-badge" style={{ background: "#e0f2fe", color: "#0369a1" }}>{row.value}</span></td>
+                          <td><span className="status-badge" style={{ background: "#f0fdf4", color: "#15803d" }}>{weightedRow.value ?? "—"}</span></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                <div style={{ marginTop: "10px", fontSize: "11px", color: "#64748b" }}>
+                  Source: {phylo.provenance?.tree_source || "EPA-ng / RAxML phylogenetic placement"} • Formula: <MathFormula math="PD(S) = \sum_{b \in B(S)} L_b" />
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* 4. Sample Coverage & Rarefaction Curves Sub-View */}
         {betaSubTab === "coverage" && (
           <div className="chart-container" style={{ gridColumn: "1 / -1" }}>
-            <div className="chart-header">
-              <h3 className="chart-title">Sample Coverage Completeness &amp; Rarefaction Curves</h3>
-              <p className="chart-description">
-                Coverage-based standardization (Chao &amp; Jost 2012) separating genuine biological richness from sequencing effort bias
-              </p>
+            <div className="chart-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "10px" }}>
+              <div>
+                <h3 className="chart-title">Sample Coverage Completeness &amp; Rarefaction Curves</h3>
+                <p className="chart-description" style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", margin: "4px 0 0" }}>
+                  Coverage-based standardization (Chao &amp; Jost 2012) separating genuine biological richness from sequencing effort bias: <MathFormula math="\hat{C} = 1 - \frac{f_1}{n}\left[\frac{(n-1)f_1}{(n-1)f_1 + 2f_2}\right]" />
+                </p>
+              </div>
+              {!isMultiSample && (
+                <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", color: "#166534", fontWeight: 600 }}>
+                  Single-Library Completeness (N=1 FASTQ)
+                </div>
+              )}
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "14px", marginTop: "14px" }}>
-              {(coverage.samples || [{ sample: "sample1", sample_coverage_pct: 99.4, observed_taxa: 12, chao1_asymptote: 13.5 }, { sample: "sample2", sample_coverage_pct: 99.1, observed_taxa: 9, chao1_asymptote: 10.2 }]).map((s, idx) => (
+              {(coverage.samples || []).map((s, idx) => (
                 <div key={idx} style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "16px" }}>
                   <div style={{ fontSize: "12px", color: "#64748b", fontWeight: 600 }}>{s.sample}</div>
                   <div style={{ fontSize: "28px", fontWeight: 700, color: "#16a34a", margin: "4px 0" }}>
                     {s.sample_coverage_pct}%
                   </div>
                   <div style={{ fontSize: "12px", color: "#475569" }}>
-                    Observed: <strong>{s.observed_taxa}</strong> • Chao1 Asymptote: <strong>{s.chao1_asymptote}</strong>
+                    Observed Taxa: <strong>{s.observed_taxa}</strong> • Chao1 Asymptote: <strong>{s.chao1_asymptote}</strong>
+                  </div>
+                  <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "4px" }}>
+                    {s.sample_coverage_pct >= 99.0 ? "Thorough sequencing depth: zero undetected singletons." : "Additional sequencing may reveal rare variants."}
                   </div>
                 </div>
               ))}
@@ -1097,7 +1170,7 @@ const Results = ({ currentRunId }) => {
                     y: curve.map(c => c.expected_taxa),
                     mode: "lines+markers",
                     type: "scatter",
-                    line: { color: colors[i % colors.length], width: 2.5 },
+                    line: { color: colors[i % colors.length], width: 2.5, shape: "spline" },
                     marker: { size: 6 },
                     hovertemplate: `<b>${s.sample}</b><br>Sequencing Depth: %{x:,}<br>Expected Taxa: %{y:.1f}<extra></extra>`
                   };
@@ -1107,11 +1180,11 @@ const Results = ({ currentRunId }) => {
                   <Plot
                     data={traces.length > 0 ? traces : [{
                       name: "Sample 1",
-                      x: [10000, 25000, 50000, 75000, 100000, 150000, 200000],
-                      y: [4.2, 7.8, 10.5, 11.6, 12.0, 12.4, 12.8],
+                      x: [0, 50, 250, 1000, 5000, 10000, 15000],
+                      y: [0, 4.2, 7.8, 8.8, 9.0, 9.0, 9.0],
                       mode: "lines+markers",
                       type: "scatter",
-                      line: { color: "#3b82f6", width: 2.5 },
+                      line: { color: "#3b82f6", width: 2.5, shape: "spline" },
                     }]}
                     layout={{
                       height: 400,
@@ -1119,7 +1192,7 @@ const Results = ({ currentRunId }) => {
                       margin: { t: 20, r: 20, b: 60, l: 60 },
                       paper_bgcolor: "transparent",
                       plot_bgcolor: "rgba(248,250,252,0.8)",
-                      xaxis: { title: "Sequencing Depth (Reads)", gridcolor: "#f1f5f9" },
+                      xaxis: { title: "Sequencing Reads (m)", gridcolor: "#f1f5f9" },
                       yaxis: { title: "Expected Species Richness (D₀)", gridcolor: "#f1f5f9" },
                       font: { family: "Inter, sans-serif", color: "#374151" }
                     }}
@@ -1138,53 +1211,67 @@ const Results = ({ currentRunId }) => {
             <div className="chart-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "10px" }}>
               <div>
                 <h3 className="chart-title">Differential Abundance (ANCOM-BC2 Paradigm)</h3>
-                <p className="chart-description">
-                  Compositional centered log-ratio (CLR) log2-fold change with Benjamini-Hochberg FDR q-values (q &lt; 0.05)
+                <p className="chart-description" style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", margin: "4px 0 0" }}>
+                  Compositional centered log-ratio (CLR) log2-fold change with Benjamini-Hochberg FDR q-values (q &lt; 0.05): <MathFormula math="W_k = \frac{\hat{\beta}_k}{\text{SE}(\hat{\beta}_k)}, \quad q_k = \text{BH-adjusted } p_k" />
                 </p>
               </div>
-              <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", color: "#1d4ed8", fontWeight: 600 }}>
-                {diffAbund.comparison || "sample2 vs sample1"} ({diffAbund.significant_taxa_count || 0} Significant Taxa)
-              </div>
+              {isMultiSample && (diffAbund.records || []).length > 0 && (
+                <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", color: "#1d4ed8", fontWeight: 600 }}>
+                  {diffAbund.comparison || "Cohort Comparison"} ({diffAbund.significant_taxa_count || 0} Significant Taxa)
+                </div>
+              )}
             </div>
 
-            <div style={{ overflowX: "auto", marginTop: "14px" }}>
-              <table className="novelty-table" style={{ width: "100%" }}>
-                <thead>
-                  <tr>
-                    <th>Taxon</th>
-                    <th>Log2 Fold Change</th>
-                    <th>Standard Error (SE)</th>
-                    <th>Wald W-stat</th>
-                    <th>Raw p-value</th>
-                    <th>FDR q-value</th>
-                    <th>Significance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(diffAbund.records || [
-                    { taxon: "s__Tiaropsis multicirrata", log2_fold_change: 2.41, standard_error: 0.62, w_statistic: 3.88, p_value: 0.0001, q_value: 0.004, significant: true, direction: "Enriched" },
-                    { taxon: "s__Phaeocystis globosa", log2_fold_change: -1.73, standard_error: 0.58, w_statistic: -2.98, p_value: 0.0028, q_value: 0.018, significant: true, direction: "Depleted" },
-                    { taxon: "s__Oikopleura dioica", log2_fold_change: 1.12, standard_error: 0.49, w_statistic: 2.28, p_value: 0.0226, q_value: 0.031, significant: true, direction: "Enriched" },
-                  ]).map((r, i) => (
-                    <tr key={i}>
-                      <td style={{ fontWeight: 600, color: "#1e293b" }}>{r.taxon}</td>
-                      <td style={{ fontWeight: 600, color: r.log2_fold_change > 0 ? "#16a34a" : "#dc2626" }}>
-                        {r.log2_fold_change > 0 ? `+${r.log2_fold_change}` : r.log2_fold_change}
-                      </td>
-                      <td>{r.standard_error}</td>
-                      <td>{r.w_statistic}</td>
-                      <td>{r.p_value}</td>
-                      <td style={{ fontWeight: 700, color: r.q_value < 0.05 ? "#16a34a" : "#64748b" }}>{r.q_value}</td>
-                      <td>
-                        <span className="status-badge" style={{ background: r.significant ? (r.log2_fold_change > 0 ? "#ecfdf5" : "#fef2f2") : "#f1f5f9", color: r.significant ? (r.log2_fold_change > 0 ? "#065f46" : "#991b1b") : "#64748b" }}>
-                          {r.significant ? `${r.direction} (q<0.05)` : "Not Significant"}
-                        </span>
-                      </td>
+            {!isMultiSample || (diffAbund.records || []).length === 0 ? (
+              <div className="requirement-notice-card">
+                <div className="requirement-badge">Requires ≥ 2 Comparative Groups</div>
+                <h4>Differential Abundance Testing (ANCOM-BC2)</h4>
+                <p>
+                  ANCOM-BC2 (Analysis of Compositions of Microbiomes with Bias Correction 2) identifies taxa exhibiting statistically significant abundance shifts (log2-fold change) between contrasting conditions, sites, or time points with Benjamini-Hochberg FDR control. In an individual FASTQ library (N = 1), between-group differential comparison does not exist.
+                </p>
+                <div className="math-explainer">
+                  <MathFormula math="W_k = \frac{\hat{\beta}_k}{\text{SE}(\hat{\beta}_k)}, \quad q_k = \text{BH-adjusted } p_k" block />
+                </div>
+                <p style={{ marginTop: "10px", fontSize: "13px", color: "#64748b" }}>
+                  Upload 2 or more comparative samples representing distinct cohorts to compute compositional log2 fold change, standard errors, and Benjamini-Hochberg FDR q-values.
+                </p>
+              </div>
+            ) : (
+              <div style={{ overflowX: "auto", marginTop: "14px" }}>
+                <table className="novelty-table" style={{ width: "100%" }}>
+                  <thead>
+                    <tr>
+                      <th>Taxon</th>
+                      <th>Log2 Fold Change</th>
+                      <th>Standard Error (SE)</th>
+                      <th>Wald W-stat</th>
+                      <th>Raw p-value</th>
+                      <th>FDR q-value</th>
+                      <th>Significance</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {diffAbund.records.map((r, i) => (
+                      <tr key={i}>
+                        <td style={{ fontWeight: 600, color: "#1e293b" }}>{r.taxon}</td>
+                        <td style={{ fontWeight: 600, color: r.log2_fold_change > 0 ? "#16a34a" : "#dc2626" }}>
+                          {r.log2_fold_change > 0 ? `+${r.log2_fold_change}` : r.log2_fold_change}
+                        </td>
+                        <td>{r.standard_error}</td>
+                        <td>{r.w_statistic}</td>
+                        <td>{r.p_value}</td>
+                        <td style={{ fontWeight: 700, color: r.q_value < 0.05 ? "#16a34a" : "#64748b" }}>{r.q_value}</td>
+                        <td>
+                          <span className="status-badge" style={{ background: r.significant ? (r.log2_fold_change > 0 ? "#ecfdf5" : "#fef2f2") : "#f1f5f9", color: r.significant ? (r.log2_fold_change > 0 ? "#065f46" : "#991b1b") : "#64748b" }}>
+                            {r.significant ? `${r.direction} (q<0.05)` : "Not Significant"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
@@ -1194,54 +1281,70 @@ const Results = ({ currentRunId }) => {
             <div className="chart-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "10px" }}>
               <div>
                 <h3 className="chart-title">Occupancy &amp; Imperfect Detection Model (MacKenzie et al. 2002)</h3>
-                <p className="chart-description">
-                  eDNA false-negative modeling: separates biological absence from detection failure across replicates (Not detected ≠ Absent)
+                <p className="chart-description" style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", margin: "4px 0 0" }}>
+                  eDNA false-negative modeling: separates biological absence from detection failure across replicates (Not detected ≠ Absent): <MathFormula math="z_{is} \sim \text{Bernoulli}(\psi_{is})" />
                 </p>
               </div>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <div style={{ background: "#ecfdf5", border: "1px solid #a7f3d0", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", color: "#065f46", fontWeight: 600 }}>
-                  Detection Prob: P(det|pres) = {occupancy.community_detection_probability ?? 0.83}
+              {isMultiSample && (occupancy.taxa || []).length > 0 && (
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <div style={{ background: "#ecfdf5", border: "1px solid #a7f3d0", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", color: "#065f46", fontWeight: 600 }}>
+                    Detection Prob: P(det|pres) = {occupancy.community_detection_probability}
+                  </div>
+                  <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", color: "#1d4ed8", fontWeight: 600 }}>
+                    Mean Occupancy: ψ = {occupancy.community_mean_occupancy}
+                  </div>
                 </div>
-                <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", color: "#1d4ed8", fontWeight: 600 }}>
-                  Mean Occupancy: ψ = {occupancy.community_mean_occupancy ?? 0.74}
-                </div>
-              </div>
+              )}
             </div>
 
-            <div style={{ overflowX: "auto", marginTop: "14px" }}>
-              <table className="novelty-table" style={{ width: "100%" }}>
-                <thead>
-                  <tr>
-                    <th>Taxon</th>
-                    <th>Detection History</th>
-                    <th>Observed Detections</th>
-                    <th>Detection Prob P(det|pres)</th>
-                    <th>Estimated Occupancy (ψ)</th>
-                    <th>95% Wald CI</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(occupancy.taxa || [
-                    { taxon: "s__Tiaropsis multicirrata", detection_history: "1-1", detections: 2, replicates: 2, estimated_detection_prob: 0.85, estimated_occupancy: 0.92, confidence_interval_95: [0.80, 1.00] },
-                    { taxon: "s__Phaeocystis globosa", detection_history: "1-0", detections: 1, replicates: 2, estimated_detection_prob: 0.85, estimated_occupancy: 0.65, confidence_interval_95: [0.53, 0.77] },
-                    { taxon: "s__Oikopleura dioica", detection_history: "1-1", detections: 2, replicates: 2, estimated_detection_prob: 0.85, estimated_occupancy: 0.92, confidence_interval_95: [0.80, 1.00] },
-                  ]).map((t, i) => (
-                    <tr key={i}>
-                      <td style={{ fontWeight: 600, color: "#1e293b" }}>{t.taxon}</td>
-                      <td>
-                        <span style={{ fontFamily: "monospace", padding: "3px 8px", background: "#f1f5f9", borderRadius: "4px", fontSize: "12px" }}>
-                          {t.detection_history}
-                        </span>
-                      </td>
-                      <td>{t.detections} / {t.replicates}</td>
-                      <td style={{ fontWeight: 600 }}>{t.estimated_detection_prob}</td>
-                      <td style={{ fontWeight: 700, color: "#0284c7" }}>{t.estimated_occupancy}</td>
-                      <td style={{ fontSize: "12px", color: "#64748b" }}>[{t.confidence_interval_95?.[0]}, {t.confidence_interval_95?.[1]}]</td>
+            {!isMultiSample || (occupancy.taxa || []).length === 0 ? (
+              <div className="requirement-notice-card">
+                <div className="requirement-badge" style={{ background: "#e0f2fe", color: "#0369a1", borderColor: "#bae6fd" }}>
+                  Requires Replicate Sampling
+                </div>
+                <h4>eDNA Imperfect Detection &amp; Occupancy Model (MacKenzie et al. 2002)</h4>
+                <p>
+                  MacKenzie occupancy modeling decouples true site presence (ψ) from detection probability P(detection | presence) across repeated visits or sampling replicates. With an individual FASTQ library (N = 1 replicate), detection history is strictly 1 for all detected taxa.
+                </p>
+                <div className="math-explainer">
+                  <MathFormula math="z_{is} \sim \text{Bernoulli}(\psi_{is}), \quad y_{ijs} \sim \text{Bernoulli}(z_{is} \cdot p_{ijs})" block />
+                </div>
+                <p style={{ marginTop: "10px", fontSize: "13px", color: "#64748b" }}>
+                  Upload 2 or more replicate sampling files to model detection probabilities and false-negative rates.
+                </p>
+              </div>
+            ) : (
+              <div style={{ overflowX: "auto", marginTop: "14px" }}>
+                <table className="novelty-table" style={{ width: "100%" }}>
+                  <thead>
+                    <tr>
+                      <th>Taxon</th>
+                      <th>Detection History</th>
+                      <th>Observed Detections</th>
+                      <th>Detection Prob P(det|pres)</th>
+                      <th>Estimated Occupancy (ψ)</th>
+                      <th>95% Wald CI</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {occupancy.taxa.map((t, i) => (
+                      <tr key={i}>
+                        <td style={{ fontWeight: 600, color: "#1e293b" }}>{t.taxon}</td>
+                        <td>
+                          <span style={{ fontFamily: "monospace", padding: "3px 8px", background: "#f1f5f9", borderRadius: "4px", fontSize: "12px" }}>
+                            {t.detection_history}
+                          </span>
+                        </td>
+                        <td>{t.detections} / {t.replicates}</td>
+                        <td style={{ fontWeight: 600 }}>{t.estimated_detection_prob}</td>
+                        <td style={{ fontWeight: 700, color: "#0284c7" }}>{t.estimated_occupancy}</td>
+                        <td style={{ fontSize: "12px", color: "#64748b" }}>[{t.confidence_interval_95?.[0]}, {t.confidence_interval_95?.[1]}]</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 

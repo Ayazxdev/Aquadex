@@ -16,6 +16,7 @@
     "@nivo/pie": "^0.99.0",
     "@nivo/sankey": "^0.99.0",
     "@nivo/scatterplot": "^0.99.0",
+    "katex": "^0.18.9",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.544.0",
     "plotly.js": "^3.1.0",

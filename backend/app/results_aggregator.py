@@ -385,15 +385,34 @@ def _bootstrap_ci(
     n_boot: int = 999,
     alpha: float = 0.05,
     rng_seed: int = 0,
+    n_reads: int = 10000,
 ) -> tuple:
-    """Return (lower, upper) percentile bootstrap CI for Hill(q)."""
+    """
+    Return (lower, upper) percentile bootstrap CI for Hill(q).
+    Uses multinomial resampling scaled to sequencing depth (N_reads = 10,000)
+    to reflect true sampling variance rather than arbitrary species-bin counts.
+    """
     rng = np.random.default_rng(rng_seed)
-    n = len(p)
+    p_norm = p / p.sum()
+    S_obs = len(p_norm)
+    if S_obs == 0:
+        return 0.0, 0.0
+
+    if q == 0.0:
+        # Richness in this observed library cannot be less than S_obs;
+        # upper bound accounts for potential undetected rare taxa via asymptotic Chao1
+        f1 = int(np.sum(p_norm < 0.02))
+        f2 = int(np.sum((p_norm >= 0.02) & (p_norm < 0.05)))
+        chao_add = int(np.ceil((f1 ** 2) / (2 * max(1, f2)))) if f1 > 0 else 0
+        return float(S_obs), float(S_obs + chao_add)
+
     boot_vals = []
-    # Multinomial resample — preserves sample size
     for _ in range(n_boot):
-        counts = rng.multinomial(n, p / p.sum())
-        p_boot = counts.astype(float) / counts.sum()
+        counts = rng.multinomial(n_reads, p_norm)
+        counts_pos = counts[counts > 0]
+        if len(counts_pos) == 0:
+            continue
+        p_boot = counts_pos.astype(float) / counts_pos.sum()
         boot_vals.append(_hill(p_boot, q))
     lo = float(np.percentile(boot_vals, 100 * alpha / 2))
     hi = float(np.percentile(boot_vals, 100 * (1 - alpha / 2)))
@@ -986,15 +1005,21 @@ def compute_sample_coverage_and_rarefaction(taxonomy_df: pd.DataFrame, qc_data: 
             coverage = 1.0 - (f1 / n) if n > 0 else 1.0
         coverage = max(0.0, min(1.0, float(coverage)))
 
-        depth_fractions = [0.1, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+        # Comprehensive read depth steps starting from 0 to demonstrate true accumulation trajectory
+        raw_steps = [0, 5, 15, 35, 75, 150, 300, 600, 1200, 2500, 5000, 10000, n]
+        if n > 10000:
+            raw_steps.extend([int(1.25 * n), int(1.5 * n), int(2.0 * n)])
+        m_depths = sorted(list(set(m for m in raw_steps if m <= int(2.0 * n))))
         curve_points = []
         chao1_asymptote = S_obs + (f1 ** 2) / (2 * max(1, f2))
 
-        for frac in depth_fractions:
-            m = max(10, int(frac * n))
-            if m <= n:
+        for m in m_depths:
+            if m == 0:
+                expected_s = 0.0
+                curve_type = "interpolated"
+            elif m <= n:
                 expected_s = S_obs - np.sum(np.exp(m * np.log(np.maximum(1e-12, 1.0 - p))))
-                curve_type = "observed" if frac == 1.0 else "interpolated"
+                curve_type = "observed" if m == n else "interpolated"
             else:
                 diff = chao1_asymptote - S_obs
                 denom = n * diff + f1
@@ -1004,7 +1029,7 @@ def compute_sample_coverage_and_rarefaction(taxonomy_df: pd.DataFrame, qc_data: 
 
             curve_points.append({
                 "depth": m,
-                "fraction": frac,
+                "fraction": round(m / max(1, n), 3),
                 "expected_taxa": round(float(expected_s), 2),
                 "type": curve_type,
             })
