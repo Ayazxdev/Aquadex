@@ -800,3 +800,24 @@ body {
   min-height: 100vh;
   background-color: #ffffff;
 }
+
+/* Force Plotly hover text elements to stay locked to the center of the colored tooltip box */
+.hoverlayer .js-hover-text text,
+.hoverlayer .hovertext text,
+.hoverlayer text {
+  dominant-baseline: middle !important;
+  text-anchor: middle !important;
+  y: 0 !important; /* Prevents Plotly from shifting the text vertically out of the box */
+}
+
+.hoverlayer text tspan,
+.hoverlayer .hovertext text tspan {
+  text-anchor: middle !important;
+}
+
+/* Ensure the SVG container wraps the text dimensions tightly and doesn't capture mouse events */
+.hoverlayer .js-hover-text path,
+.hoverlayer .hovertext path,
+.hoverlayer path {
+  pointer-events: none !important;
+}

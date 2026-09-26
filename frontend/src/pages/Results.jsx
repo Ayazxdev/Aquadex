@@ -998,11 +998,11 @@ const Results = ({ currentRunId }) => {
                     plot_bgcolor: "rgba(248,250,252,0.8)",
                     hovermode: "closest",
                     hoverlabel: {
-                      namelength: 0,
-                      bgcolor: "#1e293b",
-                      bordercolor: "#334155",
-                      font: { color: "#ffffff", size: 12, family: "Inter, sans-serif" },
-                      align: "left"
+                      align: "center",
+                      namelength: -1,
+                      bgcolor: "#0f172a",
+                      bordercolor: "#38bdf8",
+                      font: { color: "#ffffff", size: 13, family: "Inter, sans-serif" }
                     },
                     xaxis: {
                       title: `PC1 (${pc1_var}% variance explained)`,
@@ -1281,15 +1281,23 @@ const Results = ({ currentRunId }) => {
                     layout={{
                       height: 400,
                       autosize: true,
-                      margin: { t: 20, r: 20, b: 60, l: 60 },
+                      margin: { t: 50, r: 40, b: 60, l: 60 },
                       paper_bgcolor: "transparent",
                       plot_bgcolor: "rgba(248,250,252,0.8)",
+                      hovermode: "closest",
+                      hoverlabel: {
+                        align: "center",
+                        namelength: -1,
+                        bgcolor: "#0f172a",
+                        bordercolor: "#38bdf8",
+                        font: { color: "#ffffff", size: 13, family: "Inter, sans-serif" }
+                      },
                       xaxis: { title: "Sequencing Reads (m)", gridcolor: "#f1f5f9" },
                       yaxis: { title: "Expected Species Richness (D₀)", gridcolor: "#f1f5f9" },
                       font: { family: "Inter, sans-serif", color: "#374151" }
                     }}
                     style={{ width: "100%", height: "100%" }}
-                    config={{ responsive: true, displaylogo: false }}
+                    config={{ responsive: true, displaylogo: false, displayModeBar: "hover" }}
                   />
                 );
               })()}
@@ -1695,11 +1703,11 @@ const Results = ({ currentRunId }) => {
                         plot_bgcolor: "rgba(248,250,252,0.7)",
                         hovermode: "closest",
                         hoverlabel: {
-                          namelength: 0,
-                          bgcolor: "#1e293b",
-                          bordercolor: "#334155",
-                          font: { color: "#ffffff", size: 12, family: "Inter, sans-serif" },
-                          align: "left"
+                          align: "center",
+                          namelength: -1,
+                          bgcolor: "#0f172a",
+                          bordercolor: "#38bdf8",
+                          font: { color: "#ffffff", size: 13, family: "Inter, sans-serif" }
                         },
                         xaxis: { title: "UMAP Dimension 1", gridcolor: "rgba(0,0,0,0.06)", zerolinecolor: "rgba(0,0,0,0.12)", automargin: true },
                         yaxis: { title: "UMAP Dimension 2", gridcolor: "rgba(0,0,0,0.06)", zerolinecolor: "rgba(0,0,0,0.12)", automargin: true },
@@ -1881,10 +1889,18 @@ const Results = ({ currentRunId }) => {
                     margin: { t: 10, r: 10, b: 10, l: 10 },
                     paper_bgcolor: "transparent",
                     plot_bgcolor: "transparent",
+                    hovermode: "closest",
+                    hoverlabel: {
+                      align: "center",
+                      namelength: -1,
+                      bgcolor: "#0f172a",
+                      bordercolor: "#38bdf8",
+                      font: { color: "#ffffff", size: 13, family: "Inter, sans-serif" }
+                    },
                     font: { family: "Inter, sans-serif", color: "#374151", size: 12 }
                   }}
                   style={{ width: "100%", height: "100%" }}
-                  config={{ responsive: true, displaylogo: false, toImageButtonOptions: { format: "svg", filename: "taxonomy_sunburst" } }}
+                  config={{ responsive: true, displaylogo: false, displayModeBar: "hover", toImageButtonOptions: { format: "svg", filename: "taxonomy_sunburst" } }}
                   useResizeHandler={true}
                 />
               ) : (
@@ -2202,6 +2218,25 @@ const Results = ({ currentRunId }) => {
 
   return (
     <div className="results-page-container">
+      {/* Global CSS injection for Plotly tooltip box locking */}
+      <style>{`
+        .hoverlayer .js-hover-text text,
+        .hoverlayer .hovertext text,
+        .hoverlayer text {
+          dominant-baseline: middle !important;
+          text-anchor: middle !important;
+          y: 0 !important;
+        }
+        .hoverlayer text tspan,
+        .hoverlayer .hovertext text tspan {
+          text-anchor: middle !important;
+        }
+        .hoverlayer .js-hover-text path,
+        .hoverlayer .hovertext path,
+        .hoverlayer path {
+          pointer-events: none !important;
+        }
+      `}</style>
       <div className="results-content">
         <div className="results-header">
           <h1 className="results-title">Analysis Results</h1>
