@@ -396,14 +396,8 @@ def _create_demo_outputs(run_id: str, marker: str = "18S", read_type: str = "sho
             "ASV_012\tUnclassified Marine Bacterium\t160",
         ]
 
-    # Save primary sample taxonomy with the real uploaded sample name
+    # Save sample taxonomy strictly for the actual uploaded sample
     (tax_dir / f"{sample_name}_taxonomy.tsv").write_text("\n".join(tax_rows_primary))
-    # Also save companion reference baseline for Beta diversity comparison
-    (tax_dir / "Reference_Baseline_taxonomy.tsv").write_text("\n".join(tax_rows_ctrl))
-
-    # Keep legacy sample1/sample2 for backward compatibility if needed
-    (tax_dir / "sample1_taxonomy.tsv").write_text("\n".join(tax_rows_primary))
-    (tax_dir / "sample2_taxonomy.tsv").write_text("\n".join(tax_rows_ctrl))
 
     # ── Novelty ──
     nov_dir = od / "novelty"
