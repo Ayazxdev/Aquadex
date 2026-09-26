@@ -16,7 +16,6 @@ warnings.filterwarnings("ignore", message=".*invalid value encountered.*")
 import pandas as pd
 import numpy as np
 from scipy.spatial.distance import pdist, squareform
-from sklearn.manifold import MDS
 
 # Config: where frontend can download static artifacts from
 ARTIFACT_BASE_URL = os.getenv("ARTIFACT_BASE_URL", "/artifact").rstrip("/")
@@ -328,45 +327,376 @@ def limit_taxonomy_rows(df: pd.DataFrame, top_n: int = 25) -> pd.DataFrame:
         return df
     return df.sort_values("abundance", ascending=False).groupby("sample").head(top_n)
 
+# ─────────────────────────────────────────────────────────────────────────────
+# ALPHA DIVERSITY — Hill numbers, Pielou evenness, bootstrap 95% CI
+# ─────────────────────────────────────────────────────────────────────────────
+# Hill diversity of order q:
+#   q=0 →  D = S             (species richness)
+#   q=1 →  D = exp(H')       (exponential Shannon)
+#   q=2 →  D = 1/Σp²         (inverse Simpson)
+# Pielou evenness: J = H' / ln(S),  0 ≤ J ≤ 1
+# Bootstrap CI uses 999 non-parametric resamples of the observed abundance vector.
+
+def _hill(p: np.ndarray, q: float) -> float:
+    """True Hill number of order q for a relative-abundance vector p (must sum to 1)."""
+    p = p[p > 0]
+    if q == 1.0:
+        return float(np.exp(-np.sum(p * np.log(p))))
+    elif q == 0.0:
+        return float(len(p))
+    else:
+        return float(np.sum(p ** q) ** (1.0 / (1.0 - q)))
+
+
+def _bootstrap_ci(
+    p: np.ndarray,
+    q: float,
+    n_boot: int = 999,
+    alpha: float = 0.05,
+    rng_seed: int = 0,
+) -> tuple:
+    """Return (lower, upper) percentile bootstrap CI for Hill(q)."""
+    rng = np.random.default_rng(rng_seed)
+    n = len(p)
+    boot_vals = []
+    # Multinomial resample — preserves sample size
+    for _ in range(n_boot):
+        counts = rng.multinomial(n, p / p.sum())
+        p_boot = counts.astype(float) / counts.sum()
+        boot_vals.append(_hill(p_boot, q))
+    lo = float(np.percentile(boot_vals, 100 * alpha / 2))
+    hi = float(np.percentile(boot_vals, 100 * (1 - alpha / 2)))
+    return lo, hi
+
+
 def compute_alpha_diversity(taxonomy_df: pd.DataFrame) -> List[Dict[str, Any]]:
+    """
+    Compute per-sample Hill diversity (q=0,1,2), Pielou evenness J, Shannon H',
+    and 95 % percentile bootstrap confidence intervals (999 resamples).
+
+    Input: taxonomy_df with columns [sample, taxon, abundance] where
+    parse_taxonomy() has already normalised each sample's abundance vector
+    to relative proportions (sum == 1 per sample).
+    """
     if taxonomy_df.empty or "abundance" not in taxonomy_df.columns or "sample" not in taxonomy_df.columns:
         return []
     out = []
     for sample, grp in taxonomy_df.groupby("sample"):
-        counts = grp["abundance"].values.astype(float)
-        total = counts.sum()
-        if total <= 0:
-            richness = int((counts > 0).sum())
-            out.append({"sample": sample, "richness": richness, "shannon": 0.0, "simpson": 0.0})
+        p = grp["abundance"].values.astype(float)
+        p = p[p > 0]          # drop structural zeros
+        p = p / p.sum()       # enforce unit sum (guard against floating-point drift)
+
+        S = int(len(p))
+        if S == 0:
+            out.append({"sample": str(sample), "richness": 0, "shannon": 0.0,
+                        "simpson": 0.0, "hill_q0": 0, "hill_q1": 0.0, "hill_q2": 0.0,
+                        "pielou_j": None, "shannon_ci": [None, None],
+                        "hill_q0_ci": [None, None], "hill_q1_ci": [None, None],
+                        "hill_q2_ci": [None, None]})
             continue
-        
-        # Filter to non-zero, non-unclassified for diversity (unclassified is a real category)
-        non_zero = counts[counts > 0]
-        richness = int(len(non_zero))
-        p = non_zero / non_zero.sum()
-        shannon = float(-np.sum(p * np.log(p + 1e-12)))
-        simpson = float(1.0 - np.sum(p ** 2))
-        out.append({"sample": str(sample), "richness": richness, "shannon": round(shannon, 4), "simpson": round(simpson, 4)})
+
+        # ── Point estimates ──────────────────────────────────────────────────
+        # Shannon entropy H' = -Σ p_i ln(p_i)
+        H_prime = float(-np.sum(p * np.log(p)))
+        # Gini-Simpson = 1 - Σp²
+        gini_simpson = float(1.0 - np.sum(p ** 2))
+        # Hill numbers (unified framework)
+        D0 = float(S)                        # q=0: richness
+        D1 = float(np.exp(H_prime))          # q=1: exp(Shannon)
+        D2 = float(1.0 / np.sum(p ** 2))     # q=2: inverse-Simpson
+        # Pielou evenness
+        pielou_j = round(H_prime / np.log(S), 4) if S > 1 else 1.0
+
+        # ── Bootstrap 95 % CI ────────────────────────────────────────────────
+        # We resample with n = len(p) pseudocounts → multinomial bootstrap
+        lo0, hi0 = _bootstrap_ci(p, 0.0)
+        lo1, hi1 = _bootstrap_ci(p, 1.0)
+        lo2, hi2 = _bootstrap_ci(p, 2.0)
+        # Shannon CI via q→1 Hill CI converted back to H'
+        lo_h = round(np.log(lo1), 4) if lo1 > 0 else 0.0
+        hi_h = round(np.log(hi1), 4) if hi1 > 0 else 0.0
+
+        out.append({
+            "sample":      str(sample),
+            # Legacy fields (kept for backwards-compat with frontend)
+            "richness":    S,
+            "shannon":     round(H_prime, 4),
+            "simpson":     round(gini_simpson, 4),
+            # Hill diversity series
+            "hill_q0":     S,
+            "hill_q1":     round(D1, 4),
+            "hill_q2":     round(D2, 4),
+            # Pielou evenness
+            "pielou_j":    pielou_j,
+            # 95 % bootstrap CIs
+            "shannon_ci":  [lo_h, hi_h],
+            "hill_q0_ci": [int(lo0), int(hi0)],
+            "hill_q1_ci": [round(lo1, 4), round(hi1, 4)],
+            "hill_q2_ci": [round(lo2, 4), round(hi2, 4)],
+            # Methodology provenance
+            "method": {
+                "hill_formula": "^q D = (Σ p_i^q)^(1/(1-q)); q=1: exp(-Σ p_i ln p_i)",
+                "pielou_formula": "J = H' / ln(S)",
+                "ci_method": "nonparametric multinomial bootstrap",
+                "ci_resamples": 999,
+                "ci_level": "95%",
+            },
+        })
     return out
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CLASSICAL PCoA — Gower (1966) eigendecomposition, NOT metric MDS
+# ─────────────────────────────────────────────────────────────────────────────
+def _classical_pcoa(D: np.ndarray, labels: List[str]) -> Dict[str, Any]:
+    """
+    Classical Principal Coordinates Analysis (Gower 1966).
+    Input D: symmetric, non-negative distance matrix (n×n).
+    Returns dict with PC1/PC2 coordinates, eigenvalues, and proportion of
+    variation explained — equivalent to what scikit-bio pcoa() reports.
+
+    Algorithm:
+      1. Double-centre: A = -0.5 * D²
+         B = (I - 11ᵀ/n) A (I - 11ᵀ/n)
+      2. Eigendecompose B = VΛVᵀ
+      3. Coordinates: F_i = V_i * √λ_i  (for positive eigenvalues only)
+    """
+    n = D.shape[0]
+    D2 = D ** 2
+    # Double centering
+    J = np.eye(n) - np.ones((n, n)) / n
+    B = -0.5 * J @ D2 @ J
+    # Symmetrize to eliminate floating-point asymmetry
+    B = (B + B.T) / 2.0
+    # Eigendecomposition (eigh is stable for symmetric matrices)
+    eigenvalues, eigenvectors = np.linalg.eigh(B)
+    # Sort descending
+    idx = np.argsort(eigenvalues)[::-1]
+    eigenvalues = eigenvalues[idx]
+    eigenvectors = eigenvectors[:, idx]
+    # Keep positive eigenvalues only for coordinates
+    pos_mask = eigenvalues > 1e-10
+    pos_vals = eigenvalues[pos_mask]
+    pos_vecs = eigenvectors[:, pos_mask]
+    if pos_vals.shape[0] < 2:
+        # Degenerate: return zeros
+        return {"pcoa": [{"sample": s, "x": 0.0, "y": 0.0, "pc1_var": 0.0, "pc2_var": 0.0} for s in labels],
+                "eigenvalues": [], "proportion_explained": []}
+    coords = pos_vecs * np.sqrt(pos_vals)   # shape (n, n_pos)
+    # Proportion of variation explained
+    total_pos = pos_vals.sum()
+    prop_explained = pos_vals / total_pos
+    pc1_var = round(float(prop_explained[0]) * 100, 1)
+    pc2_var = round(float(prop_explained[1]) * 100, 1) if len(prop_explained) > 1 else 0.0
+    pcoa_points = []
+    for i, s in enumerate(labels):
+        pcoa_points.append({
+            "sample": s,
+            "x": float(coords[i, 0]),
+            "y": float(coords[i, 1]) if coords.shape[1] > 1 else 0.0,
+            "pc1_var": pc1_var,
+            "pc2_var": pc2_var,
+        })
+    return {
+        "pcoa": pcoa_points,
+        "eigenvalues": [round(float(v), 6) for v in eigenvalues[:4].tolist()],
+        "proportion_explained": [
+            {"axis": f"PC{i+1}", "pct": round(float(prop_explained[i]) * 100, 2)}
+            for i in range(min(4, len(prop_explained)))
+        ],
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PERMANOVA — Anderson (2001) permutation test on distance matrix
+# ─────────────────────────────────────────────────────────────────────────────
+def _permanova(
+    D: np.ndarray,
+    group_labels: List[str],
+    n_perm: int = 999,
+    rng_seed: int = 42,
+) -> Dict[str, Any]:
+    """
+    One-way PERMANOVA (Anderson 2001 / adonis).
+    Tests whether mean within-group distance < mean between-group distance.
+
+    Pseudo-F statistic:
+        SS_total = Σ_{i<j} d²_{ij} / n
+        SS_within = Σ_g Σ_{i<j∈g} d²_{ij} / n_g
+        SS_between = SS_total - SS_within
+
+        F = (SS_between / (g-1)) / (SS_within / (n-g))
+        R² = SS_between / SS_total
+
+    p-value from permutation distribution of F under H₀.
+    """
+    if len(set(group_labels)) < 2:
+        return {}
+    n = D.shape[0]
+    D2 = (D ** 2) / n
+    groups = sorted(set(group_labels))
+    g = len(groups)
+    indices = {grp: [i for i, lbl in enumerate(group_labels) if lbl == grp] for grp in groups}
+
+    def pseudo_f(perm_labels):
+        perm_indices = {grp: [i for i, lbl in enumerate(perm_labels) if lbl == grp] for grp in groups}
+        ss_w = sum(
+            np.sum(D2[np.ix_(idx, idx)]) / 2.0
+            for idx in perm_indices.values() if len(idx) > 1
+        )
+        ss_t = np.sum(np.triu(D2, k=1))
+        ss_b = ss_t - ss_w
+        n_w = n - g
+        n_b = g - 1
+        if ss_w <= 0 or n_w <= 0:
+            return 0.0
+        return (ss_b / n_b) / (ss_w / n_w)
+
+    obs_f = pseudo_f(group_labels)
+    ss_t = np.sum(np.triu(D2, k=1))
+    ss_w = sum(
+        np.sum(D2[np.ix_(idx, idx)]) / 2.0
+        for idx in indices.values() if len(idx) > 1
+    )
+    r_squared = float((ss_t - ss_w) / ss_t) if ss_t > 0 else 0.0
+
+    rng = np.random.default_rng(rng_seed)
+    labels_arr = np.array(group_labels)
+    exceed = 0
+    for _ in range(n_perm):
+        perm = rng.permutation(labels_arr).tolist()
+        if pseudo_f(perm) >= obs_f:
+            exceed += 1
+    p_value = (exceed + 1) / (n_perm + 1)   # + 1 for observed test stat
+
+    return {
+        "pseudo_f": round(float(obs_f), 4),
+        "r_squared": round(r_squared, 4),
+        "p_value": round(p_value, 4),
+        "n_permutations": n_perm,
+        "groups": groups,
+        "n_samples": n,
+        "method": "PERMANOVA (Anderson 2001); pseudo-F permutation test",
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# BETA DIVERSITY — Bray-Curtis PCoA, Aitchison CLR PCoA, Jaccard, PERMANOVA
+# ─────────────────────────────────────────────────────────────────────────────
+# Aitchison preprocessing:
+#   zero replacement  = multiplicative pseudocount
+#   pseudocount value = 0.5 / (number of taxa)   [GBM-style half-count replacement]
+#   This is applied before CLR so that provenance is explicit.
+
 def compute_beta_diversity(taxonomy_df: pd.DataFrame) -> Dict[str, Any]:
+    """
+    Compute all beta-diversity metrics:
+      - Bray-Curtis dissimilarity + classical PCoA (eigendecomposition)
+      - Jaccard dissimilarity (presence/absence)
+      - Aitchison distance (CLR-transformed Euclidean) + classical PCoA
+      - PERMANOVA: one-way test treating each sample as its own group
+
+    Input: taxonomy_df with columns [sample, taxon, abundance] where
+    abundances are per-sample relative proportions (as returned by parse_taxonomy).
+    """
     if taxonomy_df.empty or "sample" not in taxonomy_df.columns or "taxon" not in taxonomy_df.columns:
         return {}
-    abundance_df = taxonomy_df.pivot_table(index="sample", columns="taxon", values="abundance", aggfunc="sum", fill_value=0)
-    if abundance_df.shape[0] < 2:
-        return {}  # not enough samples for distances
-    bc_dist = pdist(abundance_df.values, metric="braycurtis")
-    bc_matrix = squareform(bc_dist)
+
+    abundance_df = taxonomy_df.pivot_table(
+        index="sample", columns="taxon", values="abundance",
+        aggfunc="sum", fill_value=0.0
+    )
+    abundance_df = abundance_df.astype(float)
+
+    # Re-normalise each row to ensure Σp_i = 1 per sample (guard against pivot fill)
+    row_sums = abundance_df.sum(axis=1)
+    abundance_df = abundance_df.div(row_sums.replace(0, 1), axis=0)
+
+    n_samples = abundance_df.shape[0]
+    if n_samples < 2:
+        return {}   # Bray-Curtis / PCoA require ≥ 2 samples
+
     samples = list(abundance_df.index)
-    distances = []
-    for i, s1 in enumerate(samples):
-        for j, s2 in enumerate(samples):
-            distances.append({"sample1": s1, "sample2": s2, "value": float(bc_matrix[i, j])})
-    # PCoA-like via MDS
-    mds = MDS(n_components=2, dissimilarity="precomputed", random_state=42)
-    coords = mds.fit_transform(bc_matrix)
-    pcoa = [{"sample": s, "x": float(coords[i, 0]), "y": float(coords[i, 1])} for i, s in enumerate(samples)]
-    return {"samples": samples, "distances": distances, "pcoa": pcoa}
+    X = abundance_df.values   # shape (n_samples, n_taxa) — row-normalised relative abundances
+
+    # ── Bray-Curtis ──────────────────────────────────────────────────────────
+    # BC(x,y) = Σ|x_i - y_i| / Σ(x_i + y_i)  on relative-abundance vectors
+    bc_vec = pdist(X, metric="braycurtis")
+    bc_matrix = squareform(bc_vec)
+    bc_distances = [
+        {"sample1": samples[i], "sample2": samples[j], "value": round(float(bc_matrix[i, j]), 6)}
+        for i in range(n_samples) for j in range(n_samples)
+    ]
+    bc_pcoa = _classical_pcoa(bc_matrix, samples)
+
+    # ── Jaccard (presence/absence) ───────────────────────────────────────────
+    # J(x,y) = 1 - |A∩B| / |A∪B|   where A,B are sets of observed taxa
+    X_pa = (X > 0).astype(float)
+    jac_vec = pdist(X_pa, metric="jaccard")
+    jac_matrix = squareform(jac_vec)
+    jac_distances = [
+        {"sample1": samples[i], "sample2": samples[j], "value": round(float(jac_matrix[i, j]), 6)}
+        for i in range(n_samples) for j in range(n_samples)
+    ]
+
+    # ── Aitchison distance (CLR-based) ───────────────────────────────────────
+    # Preprocessing:
+    #   pseudocount = 0.5 / n_taxa  (multiplicative — GBM half-count replacement)
+    #   This preserves compositional ratios while avoiding log(0).
+    # CLR: clr(p_i) = ln(p_i / g(p))  where g(p) = geometric mean of p
+    # Aitchison distance = Euclidean distance in CLR space
+    n_taxa = X.shape[1]
+    PSEUDOCOUNT = 0.5 / n_taxa   # explicitly declared — not silently added
+    X_pseudo = X + PSEUDOCOUNT
+    X_pseudo = X_pseudo / X_pseudo.sum(axis=1, keepdims=True)   # re-close after pseudocount
+    log_X = np.log(X_pseudo)
+    clr_X = log_X - log_X.mean(axis=1, keepdims=True)   # CLR transform
+    ait_vec = pdist(clr_X, metric="euclidean")
+    ait_matrix = squareform(ait_vec)
+    ait_distances = [
+        {"sample1": samples[i], "sample2": samples[j], "value": round(float(ait_matrix[i, j]), 6)}
+        for i in range(n_samples) for j in range(n_samples)
+    ]
+    ait_pcoa = _classical_pcoa(ait_matrix, samples)
+
+    # ── PERMANOVA on Bray-Curtis ─────────────────────────────────────────────
+    # With each sample as its own group (label = sample name), this tests
+    # whether samples differ significantly overall.
+    permanova = {}
+    if n_samples >= 3:
+        permanova = _permanova(bc_matrix, samples, n_perm=999)
+
+    return {
+        "samples": samples,
+        "normalization_note": (
+            "Abundance vectors are per-sample relative proportions (row-sum = 1). "
+            "Bray-Curtis and Jaccard operate on these proportions directly. "
+            f"Aitchison CLR uses pseudocount = {PSEUDOCOUNT:.2e} (0.5 / n_taxa = 0.5 / {n_taxa})."
+        ),
+        "bray_curtis": {
+            "distances": bc_distances,
+            "pcoa": bc_pcoa["pcoa"],
+            "proportion_explained": bc_pcoa.get("proportion_explained", []),
+            "eigenvalues": bc_pcoa.get("eigenvalues", []),
+            "method": "Bray-Curtis dissimilarity; classical PCoA (Gower 1966 eigendecomposition)",
+        },
+        "jaccard": {
+            "distances": jac_distances,
+            "method": "Jaccard dissimilarity on presence/absence (0/1) vectors",
+        },
+        "aitchison": {
+            "distances": ait_distances,
+            "pcoa": ait_pcoa["pcoa"],
+            "proportion_explained": ait_pcoa.get("proportion_explained", []),
+            "eigenvalues": ait_pcoa.get("eigenvalues", []),
+            "method": "Aitchison distance = Euclidean in CLR space",
+            "zero_handling": f"multiplicative pseudocount = {PSEUDOCOUNT:.4e} (0.5 / n_taxa = 0.5 / {n_taxa})",
+        },
+        "permanova": permanova,
+        # Legacy field: kept for backwards compat — points to Bray-Curtis PCoA
+        "pcoa": bc_pcoa["pcoa"],
+        "distances": bc_distances,
+    }
 
 def parse_clustering(clustering_dir: Path) -> pd.DataFrame:
     if not clustering_dir.exists():
