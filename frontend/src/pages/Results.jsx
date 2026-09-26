@@ -153,8 +153,17 @@ const Results = ({ currentRunId }) => {
     const cleanedRef = topRefRaw
       ? topRefRaw.replace(/^ref_/, "").replace(/_16S$/, "").replace(/_/g, " ")
       : "";
-    const epa = r.epa_annotation || r.epaAnnotation || cleanedRef || "Bacteria sp.";
-    const homology = r.diamond_hit || r.diamondHit || r.homology_evidence || r.homologyEvidence || (cleanedRef ? `Match: ${cleanedRef}` : "Hit Found");
+    const epa = r.epa_annotation || r.epaAnnotation || (cleanedRef ? `${cleanedRef} placement` : "Unplaced Novel Lineage");
+    
+    const rawHomology = r.diamond_hit || r.diamondHit || r.homology_evidence || r.homologyEvidence;
+    let homology = "No Homology Hit";
+    if (rawHomology && rawHomology.trim() && rawHomology !== "None" && rawHomology !== "-") {
+      homology = rawHomology;
+    } else if (cleanedRef) {
+      homology = `Match: ${cleanedRef}`;
+    } else {
+      homology = "No Homology Hit";
+    }
 
     let abundance = r.abundance || r.Abundance || r.abundance_count || null;
     if (!abundance && id) {
@@ -452,7 +461,9 @@ const Results = ({ currentRunId }) => {
           clusterId: p.cluster !== null && p.cluster !== undefined ? p.cluster : (p.cluster_id ?? 0),
           x: safeVal(p.umap?.[0] ?? p.dim_1, 0),
           y: safeVal(p.umap?.[1] ?? p.dim_2, 0),
-          noveltyScore: safeVal(p.novelty_score ?? p.novelty, 0)
+          noveltyScore: safeVal(p.novelty_score ?? p.novelty, 0),
+          phylum: p.phylum || "",
+          taxon: p.taxon || ""
         }))
       });
 
@@ -1384,6 +1395,10 @@ const Results = ({ currentRunId }) => {
               <div>
                 <h3 className="chart-title">UMAP Embedding &amp; Genomic Latent Space</h3>
                 <p className="chart-description">2D projection of DNABERT-S foundation model embeddings — visualizing evolutionary novelty and taxonomic clustering</p>
+                <div style={{ marginTop: "8px", padding: "6px 12px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "6px", fontSize: "12px", color: "#475569", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                  <span style={{ fontWeight: 600, color: "#2563eb" }}>Sequence Manifold:</span>
+                  Coordinates (x, y) represent the fixed 2D sequence-embedding space. Switching tabs recolors the same sequences by: (1) AI Novelty Gradient, (2) Taxonomic Phyla, or (3) HDBSCAN Clusters.
+                </div>
               </div>
               <div style={{ display: "flex", gap: "6px", background: "#f1f5f9", padding: "4px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
                 <button
@@ -1442,22 +1457,45 @@ const Results = ({ currentRunId }) => {
                 (() => {
                   const d = umapData.data;
                   const taxTable = results?.taxonomyTable || [];
-                  const taxByCluster = {};
-                  d.forEach(p => {
-                    const cid = String(p.clusterId ?? p.cluster ?? "-1");
-                    if (!taxByCluster[cid]) taxByCluster[cid] = {};
-                    const taxRow = taxTable.find(t => t.ASV_ID === p.asvId || t.asv === p.asvId);
-                    if (taxRow && taxRow.taxon) {
-                      const top = String(taxRow.taxon).split(";").pop()?.replace(/[a-z]__/, "").trim() || taxRow.taxon;
-                      taxByCluster[cid][top] = (taxByCluster[cid][top] || 0) + 1;
-                    }
-                  });
-                  const getTopTaxon = (cid) => {
-                    const counts = taxByCluster[cid] || {};
-                    const top = Object.entries(counts).sort((a,b) => b[1]-a[1])[0];
-                    return top ? top[0] : "Unclassified";
-                  };
+                  const novTable = results?.noveltyTable || [];
                   const palette = ["#3b82f6","#10b981","#f59e0b","#ef4444","#8b5cf6","#ec4899","#06b6d4","#84cc16","#f97316","#6366f1","#14b8a6","#d946ef"];
+
+                  const getTaxonName = (p) => {
+                    if (p.taxon && p.taxon !== "Unclassified") return p.taxon;
+                    const novRow = novTable.find(n => n.id === p.asvId || n.ASV_ID === p.asvId);
+                    if (novRow?.epaAnnotation) return novRow.epaAnnotation;
+                    const taxRow = taxTable.find(t => t.ASV_ID === p.asvId || t.asv === p.asvId);
+                    if (taxRow?.taxon) return taxRow.taxon;
+                    return "Unplaced Novel Lineage";
+                  };
+
+                  const getPhylum = (p) => {
+                    if (p.phylum && p.phylum !== "Unclassified") return p.phylum;
+                    const novRow = novTable.find(n => n.id === p.asvId || n.ASV_ID === p.asvId);
+                    const raw = p.taxon || novRow?.epaAnnotation || "";
+                    const rawLower = raw.toLowerCase();
+                    if (rawLower.includes("vibrio") || rawLower.includes("rhodo") || rawLower.includes("proteo")) return "Pseudomonadota (Proteobacteria)";
+                    if (rawLower.includes("flavo") || rawLower.includes("bacteroid")) return "Bacteroidota";
+                    if (rawLower.includes("bacill") || rawLower.includes("firmi")) return "Bacillota (Firmicutes)";
+                    if (rawLower.includes("myco") || rawLower.includes("actino")) return "Actinomycetota";
+                    if (rawLower.includes("synecho") || rawLower.includes("cyano")) return "Cyanobacteriota";
+                    if (rawLower.includes("desulf")) return "Thermodesulfobacteriota";
+                    if (rawLower.includes("plancto")) return "Planctomycetota";
+                    if (rawLower.includes("verruco")) return "Verrucomicrobiota";
+                    if (rawLower.includes("chlamy") || rawLower.includes("chloro")) return "Chlorophyta";
+                    if (rawLower.includes("diatom") || rawLower.includes("navicul")) return "Bacillariophyta (Diatom)";
+                    if (rawLower.includes("unplaced") || rawLower.includes("novel")) return "Unassigned Novel Lineage";
+                    return "Unassigned Novel Lineage";
+                  };
+
+                  const getTopTaxonForCluster = (cid) => {
+                    const pts = d.filter(p => String(p.clusterId ?? p.cluster ?? "-1") === cid);
+                    for (const pt of pts) {
+                      const ph = getPhylum(pt);
+                      if (ph && ph !== "Unassigned Novel Lineage") return ph;
+                    }
+                    return "Novel Lineage Cluster";
+                  };
 
                   let traces = [];
                   if (umapColorMode === "novelty") {
@@ -1465,10 +1503,9 @@ const Results = ({ currentRunId }) => {
                       x: d.map(p => p.x),
                       y: d.map(p => p.y),
                       mode: "markers",
-                      type: "scattergl",
+                      type: "scatter",
                       customdata: d.map(p => {
-                        const taxRow = taxTable.find(t => t.ASV_ID === p.asvId || t.asv === p.asvId);
-                        const taxon = taxRow?.taxon ? String(taxRow.taxon).split(";").slice(-2).map(s => s.replace(/[a-z]__/, "")).join(" > ") : "Unknown / Novel";
+                        const taxon = getTaxonName(p);
                         const score = p.noveltyScore !== undefined ? Number(p.noveltyScore).toFixed(3) : "0.000";
                         return [p.asvId, taxon, score, p.clusterId ?? "0"];
                       }),
@@ -1486,20 +1523,15 @@ const Results = ({ currentRunId }) => {
                         },
                         cmin: 0,
                         cmax: 1,
-                        size: 7,
-                        opacity: 0.85,
-                        line: { color: "rgba(255,255,255,0.4)", width: 0.5 }
+                        size: 9,
+                        opacity: 0.88,
+                        line: { color: "rgba(255,255,255,0.7)", width: 1 }
                       }
                     }];
                   } else if (umapColorMode === "taxonomy") {
                     const byTaxon = {};
                     d.forEach(p => {
-                      const taxRow = taxTable.find(t => t.ASV_ID === p.asvId || t.asv === p.asvId);
-                      let grp = "Unclassified / Novel";
-                      if (taxRow?.taxon) {
-                        const parts = String(taxRow.taxon).split(";").map(s => s.replace(/[a-z]__/, "").trim()).filter(Boolean);
-                        grp = parts[1] || parts[0] || grp;
-                      }
+                      const grp = getPhylum(p);
                       if (!byTaxon[grp]) byTaxon[grp] = [];
                       byTaxon[grp].push(p);
                     });
@@ -1509,14 +1541,14 @@ const Results = ({ currentRunId }) => {
                       x: pts.map(p => p.x),
                       y: pts.map(p => p.y),
                       mode: "markers",
-                      type: "scattergl",
+                      type: "scatter",
                       customdata: pts.map(p => [p.asvId, grp, Number(p.noveltyScore || 0).toFixed(3), p.clusterId ?? "0"]),
-                      hovertemplate: "<b>ASV:</b> %{customdata[0]}<br><b>Group:</b> %{customdata[1]}<br><b>Novelty:</b> %{customdata[2]}<br><b>Cluster:</b> %{customdata[3]}<br><b>Coords:</b> (%{x:.2f}, %{y:.2f})<extra></extra>",
+                      hovertemplate: "<b>ASV:</b> %{customdata[0]}<br><b>Phylum:</b> %{customdata[1]}<br><b>Novelty:</b> %{customdata[2]}<br><b>Cluster:</b> %{customdata[3]}<br><b>Coords:</b> (%{x:.2f}, %{y:.2f})<extra></extra>",
                       marker: {
                         color: palette[i % palette.length],
-                        size: 7,
-                        opacity: 0.85,
-                        line: { color: "rgba(255,255,255,0.4)", width: 0.5 }
+                        size: 9,
+                        opacity: 0.88,
+                        line: { color: "rgba(255,255,255,0.7)", width: 1 }
                       }
                     }));
                   } else {
@@ -1530,16 +1562,16 @@ const Results = ({ currentRunId }) => {
                     const otherClusters = sortedClusters.slice(10);
 
                     traces = top10.map(([cid, pts], i) => {
-                      const topTaxon = getTopTaxon(cid);
+                      const topTaxon = getTopTaxonForCluster(cid);
                       return {
                         name: `C${cid} · ${topTaxon} (${pts.length})`,
                         x: pts.map(p => p.x),
                         y: pts.map(p => p.y),
                         mode: "markers",
-                        type: "scattergl",
+                        type: "scatter",
                         customdata: pts.map(p => [p.asvId, topTaxon, Number(p.noveltyScore || 0).toFixed(3), cid]),
-                        hovertemplate: "<b>ASV:</b> %{customdata[0]}<br><b>Cluster:</b> %{customdata[3]}<br><b>Taxon:</b> %{customdata[1]}<br><b>Novelty:</b> %{customdata[2]}<br><b>Coords:</b> (%{x:.2f}, %{y:.2f})<extra></extra>",
-                        marker: { color: palette[i % palette.length], size: 7, opacity: 0.85, line: { color: "rgba(255,255,255,0.4)", width: 0.5 } }
+                        hovertemplate: "<b>ASV:</b> %{customdata[0]}<br><b>Cluster:</b> %{customdata[3]}<br><b>Lineage:</b> %{customdata[1]}<br><b>Novelty:</b> %{customdata[2]}<br><b>Coords:</b> (%{x:.2f}, %{y:.2f})<extra></extra>",
+                        marker: { color: palette[i % palette.length], size: 9, opacity: 0.88, line: { color: "rgba(255,255,255,0.7)", width: 1 } }
                       };
                     });
                     if (otherClusters.length > 0) {
@@ -1549,10 +1581,10 @@ const Results = ({ currentRunId }) => {
                         x: otherPts.map(p => p.x),
                         y: otherPts.map(p => p.y),
                         mode: "markers",
-                        type: "scattergl",
+                        type: "scatter",
                         customdata: otherPts.map(p => [p.asvId, "Other", Number(p.noveltyScore || 0).toFixed(3), p.clusterId ?? "0"]),
                         hovertemplate: "<b>ASV:</b> %{customdata[0]}<br><b>Cluster:</b> %{customdata[3]}<br><b>Novelty:</b> %{customdata[2]}<extra></extra>",
-                        marker: { color: "#94a3b8", size: 5, opacity: 0.6 }
+                        marker: { color: "#94a3b8", size: 6, opacity: 0.6 }
                       });
                     }
                     if (byCluster["-1"] || byCluster["unclassified"]) {
@@ -1562,16 +1594,17 @@ const Results = ({ currentRunId }) => {
                         x: noisePts.map(p => p.x),
                         y: noisePts.map(p => p.y),
                         mode: "markers",
-                        type: "scattergl",
-                        customdata: noisePts.map(p => [p.asvId, "Noise", Number(p.noveltyScore || 0).toFixed(3), "-1"]),
+                        type: "scatter",
+                        customdata: noisePts.map(p => [p.asvId, "Noise / Outlier", Number(p.noveltyScore || 0).toFixed(3), "-1"]),
                         hovertemplate: "<b>ASV:</b> %{customdata[0]}<br><b>Status:</b> Noise / Outlier<br><b>Novelty:</b> %{customdata[2]}<extra></extra>",
-                        marker: { color: "#cbd5e1", size: 4, opacity: 0.35 }
+                        marker: { color: "#cbd5e1", size: 7, opacity: 0.5 }
                       });
                     }
                   }
 
                   return (
                     <Plot
+                      key={umapColorMode}
                       data={traces}
                       layout={{
                         height: 540,
@@ -1698,9 +1731,6 @@ const Results = ({ currentRunId }) => {
           <div className="chart-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "10px" }}>
             <div>
               <h3 className="chart-title">Taxonomic Classification &amp; Evidence Architecture</h3>
-              <p className="chart-description">
-                Interactive Sunburst clade zooming and reproducible multi-classifier evidence chains (Kraken2 + BERTax + DIAMOND)
-              </p>
             </div>
             <div style={{ display: "flex", gap: "6px", background: "#f1f5f9", padding: "4px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
               <button
@@ -1964,9 +1994,6 @@ const Results = ({ currentRunId }) => {
               <h3 style={{ margin: 0, fontSize: "16px", color: "#1e293b", fontWeight: 700 }}>Novelty Detector Validation</h3>
               <span className="status-badge" style={{ background: "#ecfdf5", color: "#065f46" }}>Calibrated</span>
             </div>
-            <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#64748b" }}>
-              Validation against withheld known reference taxa: evaluates whether the AI detector distinguishes novel lineages from cataloged organisms.
-            </p>
           </div>
           <div style={{ background: "#f8fafc", padding: "12px 18px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
             <div style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}>Benchmark AUPR (Precision-Recall)</div>
@@ -2078,8 +2105,9 @@ const Results = ({ currentRunId }) => {
   }
 
   const tableData = results?.noveltyTable ?? [];
-  // Show all novelty tiers (high, medium, low) — no pre-filtering
-  const visibleRows = showAll ? tableData : tableData.slice(0, 20);
+  const PAGE_SIZE = 50;
+  // Show up to 50 rows initially; expand to all if user clicks Show All
+  const visibleRows = showAll ? tableData : tableData.slice(0, PAGE_SIZE);
 
   return (
     <div className="results-page-container">
@@ -2152,7 +2180,10 @@ const Results = ({ currentRunId }) => {
                         <td>{item.faissDist}</td>
                         <td className="annotation-cell">{item.epaAnnotation}</td>
                         <td>
-                          <span className={`status-badge ${item.homologyEvidence && item.homologyEvidence !== "Yes" && item.homologyEvidence !== "-" ? "neutral" : "success"}`}>
+                          <span
+                            className={`status-badge ${item.homologyEvidence === "No Homology Hit" ? "warning" : "neutral"}`}
+                            style={item.homologyEvidence === "No Homology Hit" ? { background: "#fef3c7", color: "#92400e", border: "1px solid #fde68a" } : undefined}
+                          >
                             {item.homologyEvidence}
                           </span>
                         </td>
@@ -2167,10 +2198,10 @@ const Results = ({ currentRunId }) => {
                   })}
                 </tbody>
               </table>
-              {(results.noveltyTable?.length ?? 0) > 4 && (
+              {tableData.length > PAGE_SIZE && (
                 <div className="table-footer">
                   <button className="show-more-btn" onClick={() => setShowAll(!showAll)}>
-                    {showAll ? "Show Less" : `Show All ${(results.noveltyTable?.length ?? 0)} Candidates`}
+                    {showAll ? "Show Less" : `Show All ${tableData.length} Candidates`}
                   </button>
                 </div>
               )}

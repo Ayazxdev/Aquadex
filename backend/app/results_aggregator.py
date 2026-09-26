@@ -1380,7 +1380,7 @@ def parse_clustering(clustering_dir: Path) -> pd.DataFrame:
             return pd.DataFrame()
     return df
 
-def _normalize_clustering_row(r: Dict[str, Any]) -> Dict[str, Any]:
+def _normalize_clustering_row(r: Dict[str, Any], tax_lookup: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     asv = r.get("ASV_ID") or r.get("asv") or r.get("ASV") or r.get("asv_id") or ""
     cluster = r.get("cluster_id") if r.get("cluster_id") is not None else r.get("cluster") if r.get("cluster") is not None else r.get("clusterId") if r.get("clusterId") is not None else None
     x = r.get("dim_1") or r.get("umap_1") or r.get("x") or r.get("dim1")
@@ -1396,7 +1396,51 @@ def _normalize_clustering_row(r: Dict[str, Any]) -> Dict[str, Any]:
     except Exception:
         novelty_score = None
     top_ref = r.get("top_refs") or r.get("top_ref") or r.get("closest_ref") or ""
-    return {"asv": str(asv), "cluster": int(cluster) if cluster is not None and str(cluster) != "" else None, "umap": [x, y], "novelty_score": novelty_score, "top_ref": top_ref}
+    
+    lookup_info = tax_lookup.get(str(asv), {}) if tax_lookup else {}
+    taxon = r.get("taxon") or lookup_info.get("taxon") or str(top_ref) or "Unclassified"
+    phylum = r.get("phylum") or lookup_info.get("phylum") or ""
+    if not phylum and taxon:
+        t_clean = taxon.lower()
+        if "vibrio" in t_clean or "rhodo" in t_clean or "gamma" in t_clean or "proteo" in t_clean:
+            phylum = "Pseudomonadota (Proteobacteria)"
+        elif "flavo" in t_clean or "bacteroid" in t_clean:
+            phylum = "Bacteroidota"
+        elif "bacill" in t_clean or "firmi" in t_clean or "clostrid" in t_clean:
+            phylum = "Bacillota (Firmicutes)"
+        elif "myco" in t_clean or "actino" in t_clean:
+            phylum = "Actinomycetota"
+        elif "synecho" in t_clean or "cyano" in t_clean:
+            phylum = "Cyanobacteriota"
+        elif "desulf" in t_clean:
+            phylum = "Thermodesulfobacteriota"
+        elif "plancto" in t_clean:
+            phylum = "Planctomycetota"
+        elif "verruco" in t_clean:
+            phylum = "Verrucomicrobiota"
+        elif "chlamy" in t_clean or "chloro" in t_clean:
+            phylum = "Chlorophyta"
+        elif "diatom" in t_clean or "navicul" in t_clean:
+            phylum = "Bacillariophyta (Diatom)"
+        elif "unplaced" in t_clean or "novel" in t_clean:
+            phylum = "Unassigned Novel Lineage"
+        elif "p__" in taxon:
+            for p in taxon.split(";"):
+                if p.strip().startswith("p__"):
+                    phylum = p.strip().replace("p__", "")
+                    break
+    if not phylum:
+        phylum = "Unassigned / Novel"
+
+    return {
+        "asv": str(asv),
+        "cluster": int(cluster) if cluster is not None and str(cluster) != "" else None,
+        "umap": [x, y],
+        "novelty_score": novelty_score,
+        "top_ref": top_ref,
+        "taxon": taxon,
+        "phylum": phylum
+    }
 
 def build_sankey_from_taxonomy(taxonomy_df: pd.DataFrame, top_k: int = 25) -> Dict[str, Any]:
     """
@@ -1793,6 +1837,15 @@ def aggregate_results(run_dir: Path) -> Dict[str, Any]:
     # Now limit rows for frontend serialization
     taxonomy_df_limited = limit_taxonomy_rows(taxonomy_df, top_n=50)
 
+    tax_lookup = {}
+    if not novelty_df.empty:
+        asv_col = next((c for c in novelty_df.columns if "asv" in c.lower() or "id" in c.lower()), None)
+        epa_col = next((c for c in novelty_df.columns if "epa" in c.lower() or "ref" in c.lower()), None)
+        if asv_col and epa_col:
+            for _, nr in novelty_df.iterrows():
+                asv_k = str(nr[asv_col])
+                tax_lookup[asv_k] = {"taxon": str(nr[epa_col]), "phylum": ""}
+
     clustering_list = []
     if not clustering_df.empty:
         # Sample points if too large to prevent browser freezing on scatterplot
@@ -1801,7 +1854,7 @@ def aggregate_results(run_dir: Path) -> Dict[str, Any]:
         else:
             sample_df = clustering_df
         for _, row in sample_df.iterrows():
-            clustering_list.append(_normalize_clustering_row(row.to_dict()))
+            clustering_list.append(_normalize_clustering_row(row.to_dict(), tax_lookup))
 
     # cluster stats
     cluster_stats = {}

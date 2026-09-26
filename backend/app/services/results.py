@@ -119,13 +119,15 @@ def read_novelty(run_id: str) -> List[Dict[str, Any]]:
                 dist = r.get("distances") or r.get("faiss_dist") or r.get("faissDist") or ""
                 refs = r.get("top_refs") or r.get("refs") or ""
                 confidence = r.get("anchor_confidence") or r.get("confidence") or ""
+                epa = r.get("epa_annotation") or (f"Nearest: {refs.split(';')[0]}" if refs else "Unplaced Novel Lineage")
+                diamond = r.get("diamond_hit") or (f"Match: {refs.split(';')[0]}" if refs else "No Homology Hit")
                 out.append({
                     "id": asv_id,
                     "noveltyScore": str(score),
                     "vaeloss": str(confidence),
                     "faissDist": str(dist),
-                    "epaAnnotation": f"Nearest: {refs.split(';')[0]}" if refs else "Unassigned",
-                    "diamondHit": refs.split(";")[0] if refs else "",
+                    "epaAnnotation": str(epa),
+                    "diamondHit": str(diamond),
                     "abundance": str(r.get("abundance", "100")),
                     "depth": str(r.get("depth", "3200m")),
                     "location": str(r.get("location", "Marine Sediment")),
@@ -251,7 +253,12 @@ def clustering_to_umap(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
             cid = int(r.get("cluster_id", 0))
             asv = r.get("ASV_ID", "ASV")
             nov = float(r.get("novelty_score", 0.0) or 0.0)
-            points.append({"x": x, "y": y, "cluster": cid, "id": asv, "novelty": nov})
+            taxon = r.get("taxon", "")
+            phylum = r.get("phylum", "")
+            points.append({
+                "x": x, "y": y, "cluster": cid, "id": asv, "novelty": nov,
+                "taxon": taxon, "phylum": phylum
+            })
         except Exception:
             continue
     return {"points": points}

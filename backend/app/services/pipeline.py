@@ -427,29 +427,29 @@ def _create_demo_outputs(run_id: str, marker: str = "18S", read_type: str = "sho
         "ASV_009": "380", "ASV_010": "350", "ASV_011": "320", "ASV_012": "290",
     }
     nov_rows = [
-        "ASV_ID\tnovelty_score\tanchor_confidence\ttop_refs\tdistances\tabundance\tdepth\tlocation\tlat\tlon",
+        "ASV_ID\tnovelty_score\tanchor_confidence\ttop_refs\tdistances\tepa_annotation\tdiamond_hit\tabundance\tdepth\tlocation\tlat\tlon",
     ]
     nov_csv_rows = [
         "id,novelty_score,vae_loss,faiss_dist,epa_annotation,diamond_hit,abundance,depth,location,lat,lon",
     ]
     nov_data = [
-        ("ASV_001", "0.95", "0.12", "ref_vibrio_1;ref_vibrio_2", "0.45;0.52", "Vibrionaceae placement", "ref_vibrio_1"),
-        ("ASV_002", "0.87", "0.18", "ref_flavo_1;ref_flavo_2", "0.52;0.61", "Flavobacteriaceae placement", "ref_flavo_1"),
-        ("ASV_003", "0.18", "0.85", "ref_bacillus_1;ref_bacillus_2", "0.08;0.11", "Bacillaceae placement", "ref_bacillus_1"),
-        ("ASV_004", "0.78", "0.22", "ref_myco_1", "0.38", "Mycobacteriaceae placement", "ref_myco_1"),
-        ("ASV_005", "0.41", "0.46", "ref_roseo_1;ref_roseo_2", "0.29;0.35", "Rhodobacteraceae placement", "ref_roseo_1"),
-        ("ASV_006", "0.83", "0.19", "ref_chloro_1", "0.42", "Chlamydomonadaceae placement", "ref_chloro_1"),
-        ("ASV_007", "0.22", "0.82", "ref_synecho_1;ref_synecho_2", "0.09;0.12", "Synechococcaceae placement", "ref_synecho_1"),
-        ("ASV_008", "0.91", "0.14", "ref_desulf_1", "0.47", "Desulfobacteraceae placement", "ref_desulf_1"),
-        ("ASV_009", "0.88", "0.15", "ref_plancto_1", "0.50", "Planctomycetaceae placement", "ref_plancto_1"),
-        ("ASV_010", "0.26", "0.78", "ref_verruco_1", "0.14", "Verrucomicrobiaceae placement", "ref_verruco_1"),
-        ("ASV_011", "0.90", "0.13", "ref_diatom_1;ref_diatom_2", "0.46;0.51", "Naviculaceae placement", "ref_diatom_1"),
-        ("ASV_012", "0.96", "0.08", "", "0.82", "Unplaced novel ASV", ""),
+        ("ASV_001", "0.95", "0.12", "ref_vibrio_1;ref_vibrio_2", "0.45;0.52", "Vibrionaceae placement", "Remote Homolog (38.5% id)"),
+        ("ASV_002", "0.87", "0.18", "ref_flavo_1;ref_flavo_2", "0.52;0.61", "Flavobacteriaceae placement", "Remote Homolog (51.0% id)"),
+        ("ASV_003", "0.18", "0.85", "ref_bacillus_1;ref_bacillus_2", "0.08;0.11", "Bacillaceae placement", "Bacillus subtilis (99.2% id)"),
+        ("ASV_004", "0.78", "0.22", "ref_myco_1", "0.38", "Mycobacteriaceae placement", "Divergent Homolog (68.2% id)"),
+        ("ASV_005", "0.41", "0.46", "ref_roseo_1;ref_roseo_2", "0.29;0.35", "Rhodobacteraceae placement", "Roseobacter sp. (91.4% id)"),
+        ("ASV_006", "0.83", "0.19", "ref_chloro_1", "0.42", "Chlamydomonas-like placement", "Remote Homolog (54.1% id)"),
+        ("ASV_007", "0.22", "0.82", "ref_synecho_1;ref_synecho_2", "0.09;0.12", "Synechococcaceae placement", "Synechococcus sp. (98.5% id)"),
+        ("ASV_008", "0.91", "0.14", "ref_desulf_1", "0.47", "Desulfobacteraceae placement", "Remote Homolog (42.0% id)"),
+        ("ASV_009", "0.88", "0.15", "ref_plancto_1", "0.50", "Planctomycetota placement", "Remote Homolog (48.3% id)"),
+        ("ASV_010", "0.26", "0.78", "ref_verruco_1", "0.14", "Verrucomicrobiaceae placement", "Verrucomicrobia bacterium (96.8% id)"),
+        ("ASV_011", "0.90", "0.13", "ref_diatom_1;ref_diatom_2", "0.46;0.51", "Naviculaceae placement", "Remote Homolog (44.6% id)"),
+        ("ASV_012", "0.96", "0.08", "", "0.82", "Unplaced Novel Lineage", "No Homology Hit"),
     ]
     for asv_id, score, vae, refs, dist, epa, diamond in nov_data:
         loc = sample_locations[asv_id]
         nov_rows.append(
-            f"{asv_id}\t{score}\t{vae}\t{refs}\t{dist}\t{abundance_map[asv_id]}\t{loc['depth']}\t{loc['location']}\t{loc['lat']}\t{loc['lon']}"
+            f"{asv_id}\t{score}\t{vae}\t{refs}\t{dist}\t{epa}\t{diamond}\t{abundance_map[asv_id]}\t{loc['depth']}\t{loc['location']}\t{loc['lat']}\t{loc['lon']}"
         )
         nov_csv_rows.append(
             f"{asv_id},{score},{vae},{dist.split(';')[0]},{epa},{diamond},{abundance_map[asv_id]},{loc['depth']},{loc['location']},{loc['lat']},{loc['lon']}"
@@ -465,11 +465,25 @@ def _create_demo_outputs(run_id: str, marker: str = "18S", read_type: str = "sho
     run_seed = zlib.crc32(run_id.encode("utf-8")) & 0xffffffff
     run_rnd = random.Random(run_seed)
 
-    clust_rows = ["ASV_ID\tcluster_id\tdim_1\tdim_2\tnovelty_score\tcluster_size"]
+    clust_rows = ["ASV_ID\tcluster_id\tdim_1\tdim_2\tnovelty_score\tcluster_size\ttaxon\tphylum"]
     cluster_map = {
         "ASV_001": 0, "ASV_002": 0, "ASV_003": 1, "ASV_004": 2,
         "ASV_005": 0, "ASV_006": 3, "ASV_007": 1, "ASV_008": 2,
         "ASV_009": 2, "ASV_010": 3, "ASV_011": 3, "ASV_012": -1,
+    }
+    phylum_map = {
+        "ASV_001": ("Vibrionaceae", "Pseudomonadota (Proteobacteria)"),
+        "ASV_002": ("Flavobacteriaceae", "Bacteroidota"),
+        "ASV_003": ("Bacillaceae", "Bacillota (Firmicutes)"),
+        "ASV_004": ("Mycobacteriaceae", "Actinomycetota"),
+        "ASV_005": ("Rhodobacteraceae", "Pseudomonadota (Proteobacteria)"),
+        "ASV_006": ("Chlamydomonadaceae", "Chlorophyta"),
+        "ASV_007": ("Synechococcaceae", "Cyanobacteriota"),
+        "ASV_008": ("Desulfobacteraceae", "Thermodesulfobacteriota"),
+        "ASV_009": ("Planctomycetaceae", "Planctomycetota"),
+        "ASV_010": ("Verrucomicrobiaceae", "Verrucomicrobiota"),
+        "ASV_011": ("Naviculaceae", "Bacillariophyta (Diatom)"),
+        "ASV_012": ("Unplaced Novel Lineage", "Unassigned Novel Lineage"),
     }
     novelty_map = {
         "ASV_001": round(run_rnd.uniform(0.85, 0.98), 2),
@@ -492,7 +506,8 @@ def _create_demo_outputs(run_id: str, marker: str = "18S", read_type: str = "sho
         base_y = cid * 2.0 + run_rnd.uniform(-1.0, 1.0)
         x = run_rnd.gauss(base_x, 0.6)
         y = run_rnd.gauss(base_y, 0.5)
-        clust_rows.append(f"{asv}\t{cid}\t{x:.4f}\t{y:.4f}\t{novelty_map[asv]}\t{sizes[cid]}")
+        tx, ph = phylum_map.get(asv, ("Unclassified", "Unclassified"))
+        clust_rows.append(f"{asv}\t{cid}\t{x:.4f}\t{y:.4f}\t{novelty_map[asv]}\t{sizes[cid]}\t{tx}\t{ph}")
     (clust_dir / "clusters.tsv").write_text("\n".join(clust_rows))
 
     # ── Phylogeny (simple Newick) ──
