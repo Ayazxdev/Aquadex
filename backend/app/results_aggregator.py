@@ -49,7 +49,7 @@ except ImportError:
         return mat
 
 # Config: where frontend can download static artifacts from
-ARTIFACT_BASE_URL = os.getenv("ARTIFACT_BASE_URL", "/artifact").rstrip("/")
+ARTIFACT_BASE_URL = os.getenv("ARTIFACT_BASE_URL", "/api/artifacts").rstrip("/")
 
 # Helper utilities
 def safe_load_json(p: Path) -> Optional[Dict[str, Any]]:

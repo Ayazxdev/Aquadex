@@ -821,3 +821,8 @@ body {
 .hoverlayer path {
   pointer-events: none !important;
 }
+
+/* Completely suppress native Plotly SVG hover box for charts using Custom HTML Tooltip Overlay */
+.plotly-custom-hover .hoverlayer {
+  display: none !important;
+}

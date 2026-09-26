@@ -236,38 +236,59 @@ const Results = ({ currentRunId }) => {
     if (type === "umap") {
       const cd = pt.customdata || [];
       content = (
-        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", borderBottom: "1px solid #334155", paddingBottom: "4px" }}>
-            <span style={{ fontWeight: 700, color: "#38bdf8" }}>{cd[0] || "ASV"}</span>
-            <span style={{ fontSize: "11px", background: "#1e293b", padding: "2px 6px", borderRadius: "4px", color: "#94a3b8" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "14px", borderBottom: "1px solid #f1f5f9", paddingBottom: "6px" }}>
+            <span style={{ fontWeight: 700, color: "#1e40af", fontSize: "13px" }}>{cd[0] || "ASV"}</span>
+            <span style={{ fontSize: "11px", fontWeight: 600, background: "#eff6ff", border: "1px solid #bfdbfe", padding: "1px 7px", borderRadius: "999px", color: "#1d4ed8" }}>
               Cluster {cd[3] ?? "0"}
             </span>
           </div>
-          <div><span style={{ color: "#94a3b8" }}>Taxon:</span> <strong style={{ color: "#f8fafc", marginLeft: "4px" }}>{cd[1] || "Unclassified"}</strong></div>
-          <div><span style={{ color: "#94a3b8" }}>Novelty:</span> <strong style={{ color: "#fbbf24", marginLeft: "4px" }}>{cd[2] || "0.000"}</strong></div>
-          <div><span style={{ color: "#94a3b8" }}>Coords:</span> <span style={{ color: "#cbd5e1", marginLeft: "4px" }}>({Number(pt.x).toFixed(2)}, {Number(pt.y).toFixed(2)})</span></div>
+          <div style={{ fontSize: "12px" }}>
+            <span style={{ color: "#64748b" }}>Taxon:</span>
+            <strong style={{ color: "#0f172a", marginLeft: "6px" }}>{cd[1] || "Unclassified"}</strong>
+          </div>
+          <div style={{ fontSize: "12px" }}>
+            <span style={{ color: "#64748b" }}>Novelty:</span>
+            <strong style={{ color: "#d97706", marginLeft: "6px" }}>{cd[2] || "0.000"}</strong>
+          </div>
+          <div style={{ fontSize: "12px" }}>
+            <span style={{ color: "#64748b" }}>Coords:</span>
+            <span style={{ color: "#475569", marginLeft: "6px" }}>({Number(pt.x).toFixed(2)}, {Number(pt.y).toFixed(2)})</span>
+          </div>
         </div>
       );
     } else if (type === "rarefaction") {
       const sampleName = pt.data?.name?.split(" (")[0] || "Sample";
       content = (
-        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-          <div style={{ fontWeight: 700, color: "#38bdf8", borderBottom: "1px solid #334155", paddingBottom: "4px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+          <div style={{ fontWeight: 700, color: "#1e40af", fontSize: "13px", borderBottom: "1px solid #f1f5f9", paddingBottom: "6px" }}>
             {sampleName}
           </div>
-          <div><span style={{ color: "#94a3b8" }}>Sequencing Depth:</span> <strong style={{ color: "#f8fafc", marginLeft: "4px" }}>{Number(pt.x).toLocaleString()} reads</strong></div>
-          <div><span style={{ color: "#94a3b8" }}>Expected Taxa:</span> <strong style={{ color: "#10b981", marginLeft: "4px" }}>{Number(pt.y).toFixed(1)}</strong></div>
+          <div style={{ fontSize: "12px" }}>
+            <span style={{ color: "#64748b" }}>Sequencing Depth:</span>
+            <strong style={{ color: "#0f172a", marginLeft: "6px" }}>{Number(pt.x).toLocaleString()} reads</strong>
+          </div>
+          <div style={{ fontSize: "12px" }}>
+            <span style={{ color: "#64748b" }}>Expected Taxa:</span>
+            <strong style={{ color: "#059669", marginLeft: "6px" }}>{Number(pt.y).toFixed(1)}</strong>
+          </div>
         </div>
       );
     } else if (type === "pcoa") {
       const sampleName = pt.text || pt.data?.text?.[pt.pointIndex] || "Sample";
       content = (
-        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-          <div style={{ fontWeight: 700, color: "#38bdf8", borderBottom: "1px solid #334155", paddingBottom: "4px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+          <div style={{ fontWeight: 700, color: "#1e40af", fontSize: "13px", borderBottom: "1px solid #f1f5f9", paddingBottom: "6px" }}>
             {sampleName}
           </div>
-          <div><span style={{ color: "#94a3b8" }}>PC1:</span> <strong style={{ color: "#f8fafc", marginLeft: "4px" }}>{Number(pt.x).toFixed(4)}</strong></div>
-          <div><span style={{ color: "#94a3b8" }}>PC2:</span> <strong style={{ color: "#f8fafc", marginLeft: "4px" }}>{Number(pt.y).toFixed(4)}</strong></div>
+          <div style={{ fontSize: "12px" }}>
+            <span style={{ color: "#64748b" }}>PC1:</span>
+            <strong style={{ color: "#0f172a", marginLeft: "6px" }}>{Number(pt.x).toFixed(4)}</strong>
+          </div>
+          <div style={{ fontSize: "12px" }}>
+            <span style={{ color: "#64748b" }}>PC2:</span>
+            <strong style={{ color: "#0f172a", marginLeft: "6px" }}>{Number(pt.y).toFixed(4)}</strong>
+          </div>
         </div>
       );
     }
@@ -401,7 +422,12 @@ const Results = ({ currentRunId }) => {
       };
 
       if (!normalized.artifacts.find((a) => a.filename === "report.html")) {
-        normalized.artifacts.push({ filename: "report.html", label: "Report", url: "#", size: 2048576 });
+        normalized.artifacts.push({
+          filename: "report.html",
+          label: "Analysis Report (HTML)",
+          url: `/api/artifacts/${currentRunId}/reports/report.html`,
+          size: 2048576
+        });
       }
 
       setResults({
@@ -607,7 +633,13 @@ const Results = ({ currentRunId }) => {
 
   const handleDownloadAll = () => {
     const backendOrigin = API_BASE.replace(/\/api\/?$/, "");
-    window.location.href = `${backendOrigin}/api/download_all/${currentRunId}`;
+    const url = `${backendOrigin}/api/download_all/${currentRunId}`;
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `aquadex_results_${currentRunId}.zip`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleDownloadASVData = (asv) => {
@@ -1041,53 +1073,56 @@ const Results = ({ currentRunId }) => {
                   </p>
                 </div>
               ) : (
-                <Plot
-                  data={[
-                    {
-                      x: activePcoaList.map(p => p.x),
-                      y: activePcoaList.map(p => p.y),
-                      text: activePcoaList.map(p => p.sample),
-                      mode: "markers+text",
-                      type: "scatter",
-                      hoverinfo: "none",
-                      textposition: "top center",
-                      textfont: { family: "Inter, sans-serif", size: 13, color: "#1e293b" },
-                      marker: {
-                        size: 16,
-                        color: ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4"],
-                        line: { color: "#ffffff", width: 2 }
+                <div className="plotly-custom-hover" style={{ width: "100%", height: "100%" }}>
+                  <Plot
+                    data={[
+                      {
+                        x: activePcoaList.map(p => p.x),
+                        y: activePcoaList.map(p => p.y),
+                        text: activePcoaList.map(p => p.sample),
+                        mode: "markers+text",
+                        type: "scatter",
+                        hoverinfo: "none",
+                        hovertemplate: "",
+                        textposition: "top center",
+                        textfont: { family: "Inter, sans-serif", size: 13, color: "#1e293b" },
+                        marker: {
+                          size: 16,
+                          color: ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4"],
+                          line: { color: "#ffffff", width: 2 }
+                        }
                       }
-                    }
-                  ]}
-                  layout={{
-                    height: 460,
-                    autosize: true,
-                    margin: { t: 50, r: 40, b: 60, l: 70 },
-                    paper_bgcolor: "transparent",
-                    plot_bgcolor: "rgba(248,250,252,0.8)",
-                    hovermode: "closest",
-                    xaxis: {
-                      title: `PC1 (${pc1_var}% variance explained)`,
-                      zeroline: true,
-                      zerolinecolor: "#cbd5e1",
-                      gridcolor: "#f1f5f9",
-                      automargin: true,
-                    },
-                    yaxis: {
-                      title: `PC2 (${pc2_var}% variance explained)`,
-                      zeroline: true,
-                      zerolinecolor: "#cbd5e1",
-                      gridcolor: "#f1f5f9",
-                      automargin: true,
-                      range: activePcoaList.length === 2 ? [-0.5, 0.5] : undefined,
-                    },
-                    font: { family: "Inter, sans-serif", color: "#374151" }
-                  }}
-                  onHover={(e) => handlePlotHover(e, "pcoa")}
-                  onUnhover={handlePlotUnhover}
-                  style={{ width: "100%", height: "100%" }}
-                  config={{ responsive: true, displaylogo: false, displayModeBar: "hover", toImageButtonOptions: { format: "svg", filename: "pcoa_ordination" } }}
-                />
+                    ]}
+                    layout={{
+                      height: 460,
+                      autosize: true,
+                      margin: { t: 50, r: 40, b: 60, l: 70 },
+                      paper_bgcolor: "transparent",
+                      plot_bgcolor: "rgba(248,250,252,0.8)",
+                      hovermode: "closest",
+                      xaxis: {
+                        title: `PC1 (${pc1_var}% variance explained)`,
+                        zeroline: true,
+                        zerolinecolor: "#cbd5e1",
+                        gridcolor: "#f1f5f9",
+                        automargin: true,
+                      },
+                      yaxis: {
+                        title: `PC2 (${pc2_var}% variance explained)`,
+                        zeroline: true,
+                        zerolinecolor: "#cbd5e1",
+                        gridcolor: "#f1f5f9",
+                        automargin: true,
+                        range: activePcoaList.length === 2 ? [-0.5, 0.5] : undefined,
+                      },
+                      font: { family: "Inter, sans-serif", color: "#374151" }
+                    }}
+                    onHover={(e) => handlePlotHover(e, "pcoa")}
+                    onUnhover={handlePlotUnhover}
+                    style={{ width: "100%", height: "100%" }}
+                    config={{ responsive: true, displaylogo: false, displayModeBar: "hover", toImageButtonOptions: { format: "svg", filename: "pcoa_ordination" } }}
+                  />
+                </div>
               )}
             </div>
 
@@ -1333,32 +1368,35 @@ const Results = ({ currentRunId }) => {
                 });
 
                 return (
-                  <Plot
-                    data={traces.length > 0 ? traces : [{
-                      name: "Sample 1",
-                      x: [0, 50, 250, 1000, 5000, 10000, 15000],
-                      y: [0, 4.2, 7.8, 8.8, 9.0, 9.0, 9.0],
-                      mode: "lines+markers",
-                      type: "scatter",
-                      hoverinfo: "none",
-                      line: { color: "#3b82f6", width: 2.5, shape: "spline" },
-                    }]}
-                    layout={{
-                      height: 400,
-                      autosize: true,
-                      margin: { t: 50, r: 40, b: 60, l: 60 },
-                      paper_bgcolor: "transparent",
-                      plot_bgcolor: "rgba(248,250,252,0.8)",
-                      hovermode: "closest",
-                      xaxis: { title: "Sequencing Reads (m)", gridcolor: "#f1f5f9" },
-                      yaxis: { title: "Expected Species Richness (D₀)", gridcolor: "#f1f5f9" },
-                      font: { family: "Inter, sans-serif", color: "#374151" }
-                    }}
-                    onHover={(e) => handlePlotHover(e, "rarefaction")}
-                    onUnhover={handlePlotUnhover}
-                    style={{ width: "100%", height: "100%" }}
-                    config={{ responsive: true, displaylogo: false, displayModeBar: "hover" }}
-                  />
+                  <div className="plotly-custom-hover" style={{ width: "100%", height: "100%" }}>
+                    <Plot
+                      data={traces.length > 0 ? traces.map(t => ({ ...t, hoverinfo: "none", hovertemplate: "" })) : [{
+                        name: "Sample 1",
+                        x: [0, 50, 250, 1000, 5000, 10000, 15000],
+                        y: [0, 4.2, 7.8, 8.8, 9.0, 9.0, 9.0],
+                        mode: "lines+markers",
+                        type: "scatter",
+                        hoverinfo: "none",
+                        hovertemplate: "",
+                        line: { color: "#3b82f6", width: 2.5, shape: "spline" },
+                      }]}
+                      layout={{
+                        height: 400,
+                        autosize: true,
+                        margin: { t: 50, r: 40, b: 60, l: 60 },
+                        paper_bgcolor: "transparent",
+                        plot_bgcolor: "rgba(248,250,252,0.8)",
+                        hovermode: "closest",
+                        xaxis: { title: "Sequencing Reads (m)", gridcolor: "#f1f5f9" },
+                        yaxis: { title: "Expected Species Richness (D₀)", gridcolor: "#f1f5f9" },
+                        font: { family: "Inter, sans-serif", color: "#374151" }
+                      }}
+                      onHover={(e) => handlePlotHover(e, "rarefaction")}
+                      onUnhover={handlePlotUnhover}
+                      style={{ width: "100%", height: "100%" }}
+                      config={{ responsive: true, displaylogo: false, displayModeBar: "hover" }}
+                    />
+                  </div>
                 );
               })()}
             </div>
@@ -1751,27 +1789,38 @@ const Results = ({ currentRunId }) => {
                     }
                   }
 
+                  const cleanedUmapTraces = traces.map(t => {
+                    const { hovertemplate, ...rest } = t;
+                    return {
+                      ...rest,
+                      hoverinfo: "none",
+                      hovertemplate: ""
+                    };
+                  });
+
                   return (
-                    <Plot
-                      key={umapColorMode}
-                      data={traces.map(t => ({ ...t, hoverinfo: "none" }))}
-                      layout={{
-                        height: 540,
-                        autosize: true,
-                        margin: { t: 50, r: 40, b: umapColorMode === "novelty" ? 50 : 80, l: 60 },
-                        paper_bgcolor: "transparent",
-                        plot_bgcolor: "rgba(248,250,252,0.7)",
-                        hovermode: "closest",
-                        xaxis: { title: "UMAP Dimension 1", gridcolor: "rgba(0,0,0,0.06)", zerolinecolor: "rgba(0,0,0,0.12)", automargin: true },
-                        yaxis: { title: "UMAP Dimension 2", gridcolor: "rgba(0,0,0,0.06)", zerolinecolor: "rgba(0,0,0,0.12)", automargin: true },
-                        legend: umapColorMode === "novelty" ? undefined : { orientation: "h", y: -0.2, font: { size: 11 }, bgcolor: "rgba(255,255,255,0.9)", itemsizing: "constant" },
-                        font: { family: "Inter, sans-serif", color: "#374151" }
-                      }}
-                      onHover={(e) => handlePlotHover(e, "umap")}
-                      onUnhover={handlePlotUnhover}
-                      style={{ width: "100%", height: "100%" }}
-                      config={{ responsive: true, displaylogo: false, displayModeBar: "hover", toImageButtonOptions: { format: "svg", filename: "umap_clusters" } }}
-                    />
+                    <div className="plotly-custom-hover" style={{ height: "100%", width: "100%" }}>
+                      <Plot
+                        key={umapColorMode}
+                        data={cleanedUmapTraces}
+                        layout={{
+                          height: 540,
+                          autosize: true,
+                          margin: { t: 50, r: 40, b: umapColorMode === "novelty" ? 50 : 80, l: 60 },
+                          paper_bgcolor: "transparent",
+                          plot_bgcolor: "rgba(248,250,252,0.7)",
+                          hovermode: "closest",
+                          xaxis: { title: "UMAP Dimension 1", gridcolor: "rgba(0,0,0,0.06)", zerolinecolor: "rgba(0,0,0,0.12)", automargin: true },
+                          yaxis: { title: "UMAP Dimension 2", gridcolor: "rgba(0,0,0,0.06)", zerolinecolor: "rgba(0,0,0,0.12)", automargin: true },
+                          legend: umapColorMode === "novelty" ? undefined : { orientation: "h", y: -0.2, font: { size: 11 }, bgcolor: "rgba(255,255,255,0.9)", itemsizing: "constant" },
+                          font: { family: "Inter, sans-serif", color: "#374151" }
+                        }}
+                        onHover={(e) => handlePlotHover(e, "umap")}
+                        onUnhover={handlePlotUnhover}
+                        style={{ width: "100%", height: "100%" }}
+                        config={{ responsive: true, displaylogo: false, displayModeBar: "hover", toImageButtonOptions: { format: "svg", filename: "umap_clusters" } }}
+                      />
+                    </div>
                   );
                 })()
               ) : null}
@@ -1944,18 +1993,10 @@ const Results = ({ currentRunId }) => {
                     margin: { t: 10, r: 10, b: 10, l: 10 },
                     paper_bgcolor: "transparent",
                     plot_bgcolor: "transparent",
-                    hovermode: "closest",
-                    hoverlabel: {
-                      align: "center",
-                      namelength: -1,
-                      bgcolor: "#0f172a",
-                      bordercolor: "#38bdf8",
-                      font: { color: "#ffffff", size: 13, family: "Inter, sans-serif" }
-                    },
                     font: { family: "Inter, sans-serif", color: "#374151", size: 12 }
                   }}
                   style={{ width: "100%", height: "100%" }}
-                  config={{ responsive: true, displaylogo: false, displayModeBar: "hover", toImageButtonOptions: { format: "svg", filename: "taxonomy_sunburst" } }}
+                  config={{ responsive: true, displaylogo: false, toImageButtonOptions: { format: "svg", filename: "taxonomy_sunburst" } }}
                   useResizeHandler={true}
                 />
               ) : (
@@ -2273,21 +2314,21 @@ const Results = ({ currentRunId }) => {
 
   return (
     <div className="results-page-container">
-      {/* Industry-Standard Custom HTML Floating Tooltip Overlay */}
+      {/* Industry-Standard Custom HTML Floating Tooltip Overlay (Benchling Light Theme) */}
       {plotTooltip.visible && (
         <div
           style={{
             position: "fixed",
             left: `${plotTooltip.x + (plotTooltip.x > (typeof window !== "undefined" ? window.innerWidth : 1200) - 260 ? -240 : 16)}px`,
             top: `${plotTooltip.y + (plotTooltip.y < 120 ? 16 : -95)}px`,
-            backgroundColor: "rgba(15, 23, 42, 0.95)",
-            border: "1px solid #38bdf8",
-            color: "#ffffff",
+            backgroundColor: "rgba(255, 255, 255, 0.98)",
+            border: "1px solid #cbd5e1",
+            color: "#1e293b",
             padding: "10px 14px",
             borderRadius: "8px",
             zIndex: 999999,
             pointerEvents: "none",
-            boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4)",
+            boxShadow: "0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 4px 6px -2px rgba(15, 23, 42, 0.05)",
             fontSize: "12px",
             lineHeight: "1.5",
             maxWidth: "340px",
