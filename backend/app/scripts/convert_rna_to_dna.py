@@ -5,6 +5,7 @@ Illumina sequencing reads are DNA (T not U).
 This script converts the 18S SILVA library from RNA to DNA alphabet,
 then rebuilds the Kraken2 index so that k-mer matching will work.
 """
+import os
 import subprocess
 import shutil
 import logging
@@ -13,7 +14,7 @@ from pathlib import Path
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("rna_to_dna")
 
-OUT_DB_DIR = Path("C:/Users/tabas/.gemini/antigravity-ide/brain/a8f1b0f0-0102-4ca0-9d39-a7a004e06ff7/scratch/edna_data/db/kraken2/18S_SILVA")
+OUT_DB_DIR = Path(os.getenv("KRAKEN2_DB_DIR", Path(__file__).resolve().parents[3] / ".edna_data" / "db" / "kraken2" / "18S_SILVA"))
 LIB_FASTA = OUT_DB_DIR / "library.fasta"
 LIB_DNA = OUT_DB_DIR / "library_dna.fasta"
 

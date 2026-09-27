@@ -29,5 +29,6 @@ def download_and_extract_taxdump(target_dir: Path):
         logger.info("✅ NCBI taxonomy files (names.dmp, nodes.dmp) already present in %s", target_dir)
 
 if __name__ == "__main__":
-    db_tax_dir = Path("C:/Users/tabas/.gemini/antigravity-ide/brain/a8f1b0f0-0102-4ca0-9d39-a7a004e06ff7/scratch/edna_data/db/kraken2/18S_SILVA/taxonomy")
+    import os
+    db_tax_dir = Path(os.getenv("KRAKEN2_DB_DIR", Path(__file__).resolve().parents[3] / ".edna_data" / "db" / "kraken2" / "18S_SILVA")) / "taxonomy"
     download_and_extract_taxdump(db_tax_dir)

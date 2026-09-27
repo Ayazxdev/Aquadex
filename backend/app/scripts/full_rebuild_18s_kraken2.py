@@ -3,6 +3,7 @@ full_rebuild_18s_kraken2.py
 FULL clean rebuild of the 18S_SILVA Kraken2 database.
 Forces regeneration of seqid2taxid map from the fine-grained TaxID FASTA.
 """
+import os
 import subprocess
 import shutil
 import logging
@@ -11,7 +12,7 @@ from pathlib import Path
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("full_rebuild")
 
-OUT_DB_DIR = Path("C:/Users/tabas/.gemini/antigravity-ide/brain/a8f1b0f0-0102-4ca0-9d39-a7a004e06ff7/scratch/edna_data/db/kraken2/18S_SILVA")
+OUT_DB_DIR = Path(os.getenv("KRAKEN2_DB_DIR", Path(__file__).resolve().parents[3] / ".edna_data" / "db" / "kraken2" / "18S_SILVA"))
 LIB_DNA = OUT_DB_DIR / "library_dna.fasta"
 
 def run(cmd, desc=""):

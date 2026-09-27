@@ -19,9 +19,10 @@ from pathlib import Path
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("silva_18s_fine_builder")
 
-TAXONOMY_DIR = Path("C:/Users/tabas/.gemini/antigravity-ide/brain/a8f1b0f0-0102-4ca0-9d39-a7a004e06ff7/scratch/edna_data/db/kraken2/18S_SILVA/taxonomy")
-SILVA_18S_FASTA = Path("D:/Aquadex/AQUADEX-main/.edna_data/db/silva/silva_18s_eukaryotes.fasta")
-OUT_DB_DIR = Path("C:/Users/tabas/.gemini/antigravity-ide/brain/a8f1b0f0-0102-4ca0-9d39-a7a004e06ff7/scratch/edna_data/db/kraken2/18S_SILVA")
+DB_ROOT = Path(os.getenv("KRAKEN2_DB_DIR", Path(__file__).resolve().parents[3] / ".edna_data" / "db" / "kraken2" / "18S_SILVA"))
+TAXONOMY_DIR = DB_ROOT / "taxonomy"
+SILVA_18S_FASTA = Path(os.getenv("SILVA_FASTA", Path(__file__).resolve().parents[3] / ".edna_data" / "db" / "silva" / "silva_18s_eukaryotes.fasta"))
+OUT_DB_DIR = DB_ROOT
 OUT_FASTA = OUT_DB_DIR / "library_fine.fasta"
 
 def load_ncbi_names(names_dmp: Path) -> dict:
