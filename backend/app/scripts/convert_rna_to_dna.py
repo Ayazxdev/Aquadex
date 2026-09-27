@@ -1,10 +1,4 @@
-"""
-convert_rna_to_dna.py
-SILVA SSU reference sequences are stored as RNA (U instead of T).
-Illumina sequencing reads are DNA (T not U).
-This script converts the 18S SILVA library from RNA to DNA alphabet,
-then rebuilds the Kraken2 index so that k-mer matching will work.
-"""
+"""Convert 18S SILVA reference library from RNA to DNA alphabet for Kraken2 indexing."""
 import os
 import subprocess
 import shutil
@@ -30,7 +24,7 @@ def convert_rna_to_dna(in_fasta: Path, out_fasta: Path):
             else:
                 # Convert RNA to DNA: U→T, u→t; also lowercase to uppercase
                 fout.write(line.replace("U", "T").replace("u", "t").upper())
-    logger.info("✅ Converted %d sequences to DNA alphabet → %s", count, out_fasta)
+    logger.info("Converted %d sequences to DNA alphabet → %s", count, out_fasta)
 
 def rebuild_kraken2_db():
     # Replace library.fasta with DNA version
@@ -67,7 +61,7 @@ def rebuild_kraken2_db():
     if r2.returncode != 0:
         logger.error("kraken2-build failed: %s", r2.stderr)
         return False
-    logger.info("✅ Kraken2 18S DNA index built!\n%s", r2.stdout[-600:])
+    logger.info("Kraken2 18S DNA index built!\n%s", r2.stdout[-600:])
     return True
 
 if __name__ == "__main__":

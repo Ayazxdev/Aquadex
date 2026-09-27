@@ -218,7 +218,7 @@ const Results = ({ currentRunId }) => {
     noveltyDecomp: null,
   });
 
-  // Industry-Standard Custom HTML Tooltip Overlay state (Solution 2)
+  // Tooltip overlay state
   const [plotTooltip, setPlotTooltip] = useState({
     visible: false,
     x: 0,
@@ -2314,7 +2314,7 @@ const Results = ({ currentRunId }) => {
 
   return (
     <div className="results-page-container">
-      {/* Industry-Standard Custom HTML Floating Tooltip Overlay (Benchling Light Theme) */}
+      {/* Floating tooltip overlay */}
       {plotTooltip.visible && (
         <div
           style={{

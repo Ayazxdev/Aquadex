@@ -1,4 +1,3 @@
-# pipeline/step_packaging.py
 from pathlib import Path
 import json
 import logging

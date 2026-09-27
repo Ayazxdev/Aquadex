@@ -1,4 +1,3 @@
-# pipeline/step_contam.py
 from pathlib import Path
 import subprocess
 import logging

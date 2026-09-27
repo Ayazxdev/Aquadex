@@ -1,4 +1,3 @@
-# From pipeline/step_clustering.py
 from pathlib import Path
 import h5py
 import numpy as np
@@ -123,4 +122,4 @@ class ClusterRunner:
         out_df["cluster_size"] = out_df.groupby("cluster_id")["ASV_ID"].transform("count")
         output_path.parent.mkdir(parents=True, exist_ok=True)
         out_df.to_csv(output_path, sep="\t", index=False)
-        return output_path
+        return output_path

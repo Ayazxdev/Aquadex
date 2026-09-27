@@ -1,4 +1,3 @@
-# pipeline/step_qc.py
 from pathlib import Path
 import subprocess
 import logging

@@ -1,8 +1,4 @@
-"""
-full_rebuild_18s_kraken2.py
-FULL clean rebuild of the 18S_SILVA Kraken2 database.
-Forces regeneration of seqid2taxid map from the fine-grained TaxID FASTA.
-"""
+"""Rebuild Kraken2 18S database and regenerate seqid2taxid mapping."""
 import os
 import subprocess
 import shutil
@@ -59,7 +55,7 @@ def full_rebuild():
         "build"
     ): return False
 
-    logger.info("✅ Full rebuild complete!")
+    logger.info("Full rebuild complete!")
     
     # Verify seqid2taxid has correct taxids now
     seqid_file = OUT_DB_DIR / "seqid2taxid.map"

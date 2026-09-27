@@ -1,4 +1,3 @@
-# pipeline/step_taxonomy.py
 from pathlib import Path
 import subprocess
 import logging
@@ -10,7 +9,7 @@ from app.core.config import settings
 from app.services.storage import out_dir
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# ✅ Required files for Kraken2 DB validation
+# Required files for Kraken2 DB validation
 REQUIRED_KRAKEN2_FILES = ["taxonomy", "hash.k2d", "opts.k2d", "taxo.k2d"]
 
 def validate_kraken2_db(db_path: Path):

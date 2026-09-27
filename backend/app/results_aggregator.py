@@ -1,5 +1,3 @@
-# results_aggregator.py
-# backend/app/results_aggregator.py
 import os
 import json
 import re
@@ -358,9 +356,7 @@ def limit_taxonomy_rows(df: pd.DataFrame, top_n: int = 25) -> pd.DataFrame:
         return df
     return df.sort_values("abundance", ascending=False).groupby("sample").head(top_n)
 
-# ─────────────────────────────────────────────────────────────────────────────
 # ALPHA DIVERSITY — Hill numbers, Pielou evenness, bootstrap 95% CI
-# ─────────────────────────────────────────────────────────────────────────────
 # Hill diversity of order q:
 #   q=0 →  D = S             (species richness)
 #   q=1 →  D = exp(H')       (exponential Shannon)
@@ -445,7 +441,7 @@ def compute_alpha_diversity(taxonomy_df: pd.DataFrame) -> List[Dict[str, Any]]:
                         "hill_q2_ci": [None, None]})
             continue
 
-        # ── Point estimates ──────────────────────────────────────────────────
+        # Point estimates
         # Shannon entropy H' = -Σ p_i ln(p_i)
         H_prime = float(-np.sum(p * np.log(p)))
         # Gini-Simpson = 1 - Σp²
@@ -457,7 +453,7 @@ def compute_alpha_diversity(taxonomy_df: pd.DataFrame) -> List[Dict[str, Any]]:
         # Pielou evenness
         pielou_j = round(H_prime / np.log(S), 4) if S > 1 else 1.0
 
-        # ── Bootstrap 95 % CI ────────────────────────────────────────────────
+        # Bootstrap 95 % CI
         # We resample with n = len(p) pseudocounts → multinomial bootstrap
         lo0, hi0 = _bootstrap_ci(p, 0.0)
         lo1, hi1 = _bootstrap_ci(p, 1.0)
@@ -495,9 +491,7 @@ def compute_alpha_diversity(taxonomy_df: pd.DataFrame) -> List[Dict[str, Any]]:
     return out
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # CLASSICAL PCoA — Gower (1966) eigendecomposition, NOT metric MDS
-# ─────────────────────────────────────────────────────────────────────────────
 def _classical_pcoa(D: np.ndarray, labels: List[str]) -> Dict[str, Any]:
     """
     Classical Principal Coordinates Analysis (Gower 1966).
@@ -577,9 +571,7 @@ def _classical_pcoa(D: np.ndarray, labels: List[str]) -> Dict[str, Any]:
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # PERMANOVA — Anderson (2001) permutation test on distance matrix
-# ─────────────────────────────────────────────────────────────────────────────
 def _permanova(
     D: np.ndarray,
     group_labels: List[str],
@@ -650,9 +642,7 @@ def _permanova(
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # PERMDISP — Anderson (2006) Multivariate Dispersion Homogeneity Test
-# ─────────────────────────────────────────────────────────────────────────────
 def _permdisp(
     D: np.ndarray,
     group_labels: List[str],
@@ -741,9 +731,7 @@ def _permdisp(
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # BETA DIVERSITY — Bray-Curtis PCoA, Aitchison CLR PCoA, Jaccard, PERMANOVA, PERMDISP
-# ─────────────────────────────────────────────────────────────────────────────
 def compute_beta_diversity(taxonomy_df: pd.DataFrame) -> Dict[str, Any]:
     """
     Compute all beta-diversity metrics:
@@ -773,7 +761,7 @@ def compute_beta_diversity(taxonomy_df: pd.DataFrame) -> Dict[str, Any]:
     samples = list(abundance_df.index)
     X = abundance_df.values   # shape (n_samples, n_taxa) — row-normalised relative abundances
 
-    # ── Bray-Curtis ──────────────────────────────────────────────────────────
+    # Bray-Curtis
     bc_vec = pdist(X, metric="braycurtis")
     bc_matrix = squareform(bc_vec)
     bc_distances = [
@@ -782,7 +770,7 @@ def compute_beta_diversity(taxonomy_df: pd.DataFrame) -> Dict[str, Any]:
     ]
     bc_pcoa = _classical_pcoa(bc_matrix, samples)
 
-    # ── Jaccard (presence/absence) ───────────────────────────────────────────
+    # Jaccard (presence/absence)
     X_pa = (X > 0).astype(float)
     jac_vec = pdist(X_pa, metric="jaccard")
     jac_matrix = squareform(jac_vec)
@@ -791,7 +779,7 @@ def compute_beta_diversity(taxonomy_df: pd.DataFrame) -> Dict[str, Any]:
         for i in range(n_samples) for j in range(n_samples)
     ]
 
-    # ── Aitchison distance (CLR-based) ───────────────────────────────────────
+    # Aitchison distance (CLR-based)
     n_taxa = X.shape[1]
     PSEUDOCOUNT = 0.5 / n_taxa   # explicitly declared — not silently added
     X_pseudo = X + PSEUDOCOUNT
@@ -806,7 +794,7 @@ def compute_beta_diversity(taxonomy_df: pd.DataFrame) -> Dict[str, Any]:
     ]
     ait_pcoa = _classical_pcoa(ait_matrix, samples)
 
-    # ── PERMANOVA & PERMDISP on Bray-Curtis ──────────────────────────────────
+    # PERMANOVA & PERMDISP on Bray-Curtis
     permanova = {}
     permdisp = {}
     if n_samples >= 3:
@@ -859,9 +847,7 @@ def compute_beta_diversity(taxonomy_df: pd.DataFrame) -> Dict[str, Any]:
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # PHYLOGENETIC DIVERSITY — Faith's PD, Weighted & Unweighted UniFrac
-# ─────────────────────────────────────────────────────────────────────────────
 def compute_phylogenetic_diversity(run_dir: Path, taxonomy_df: pd.DataFrame) -> Dict[str, Any]:
     """
     Computes Faith's Phylogenetic Diversity (PD) and UniFrac (Weighted and Unweighted).
@@ -986,9 +972,7 @@ def compute_phylogenetic_diversity(run_dir: Path, taxonomy_df: pd.DataFrame) -> 
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # SAMPLE COVERAGE & RAREFACTION CURVES — Chao & Jost (2012) Standardization
-# ─────────────────────────────────────────────────────────────────────────────
 def compute_sample_coverage_and_rarefaction(taxonomy_df: pd.DataFrame, qc_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Computes Chao & Jost (2012) sample coverage completeness and analytical
@@ -1071,9 +1055,7 @@ def compute_sample_coverage_and_rarefaction(taxonomy_df: pd.DataFrame, qc_data: 
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # OCCUPANCY MODEL — Imperfect Detection in eDNA (MacKenzie et al. 2002)
-# ─────────────────────────────────────────────────────────────────────────────
 def compute_occupancy_model(taxonomy_df: pd.DataFrame) -> Dict[str, Any]:
     """
     Multispecies / site-replicate occupancy and detection probability model
@@ -1143,9 +1125,7 @@ def compute_occupancy_model(taxonomy_df: pd.DataFrame) -> Dict[str, Any]:
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # DIFFERENTIAL ABUNDANCE — Compositional CLR Log2FC with Benjamini-Hochberg FDR
-# ─────────────────────────────────────────────────────────────────────────────
 def compute_differential_abundance(taxonomy_df: pd.DataFrame) -> Dict[str, Any]:
     """
     Differential abundance testing using Compositional CLR Log2-Fold Change
@@ -1229,9 +1209,7 @@ def compute_differential_abundance(taxonomy_df: pd.DataFrame) -> Dict[str, Any]:
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # TAXONOMIC CONFIDENCE EVIDENCE CHAIN
-# ─────────────────────────────────────────────────────────────────────────────
 def compute_taxonomic_confidence(taxonomy_df: pd.DataFrame) -> Dict[str, Any]:
     """
     Exposes reproducible evidence chains for taxonomic classifications:
@@ -1306,9 +1284,7 @@ def compute_taxonomic_confidence(taxonomy_df: pd.DataFrame) -> Dict[str, Any]:
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # NOVELTY DECOMPOSITION — Multi-Modal Evidence Decomposition
-# ─────────────────────────────────────────────────────────────────────────────
 def compute_novelty_decomposition(novelty_df: pd.DataFrame) -> Dict[str, Any]:
     """
     Decomposes novelty prediction into 5 independent evidence modalities:

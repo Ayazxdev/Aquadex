@@ -42,8 +42,8 @@ def build_18s_fasta(silva_fasta_path: Path, output_dir: Path):
             elif current_fh:
                 current_fh.write(line)
 
-    logger.info("✅ Extracted %d Eukaryotic 18S sequences -> %s", count_18s, out_18s_fasta)
-    logger.info("✅ Extracted %d Prokaryotic 16S sequences -> %s", count_16s, out_16s_fasta)
+    logger.info("Extracted %d Eukaryotic 18S sequences -> %s", count_18s, out_18s_fasta)
+    logger.info("Extracted %d Prokaryotic 16S sequences -> %s", count_16s, out_16s_fasta)
     return out_18s_fasta, out_16s_fasta
 
 if __name__ == "__main__":

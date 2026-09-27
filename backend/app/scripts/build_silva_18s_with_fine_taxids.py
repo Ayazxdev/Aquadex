@@ -1,14 +1,4 @@
-"""
-build_silva_18s_with_fine_taxids.py
-Rebuilds the 18S SILVA database with fine-grained NCBI TaxIDs mapped per
-taxonomic lineage from SILVA headers — enabling Phylum/Class-level resolution.
-
-Run this once. It:
- 1. Reads NCBI taxonomy (names.dmp → name→taxid mapping)
- 2. Processes SILVA 18S FASTA headers to match taxid from the lineage string
- 3. Writes Kraken2-formatted FASTA with proper "|kraken:taxid|NNN" headers
- 4. Triggers docker kraken2-build with the new library
-"""
+"""Map NCBI TaxIDs to SILVA 18S headers for taxonomic resolution."""
 import os
 import re
 import subprocess
@@ -92,7 +82,7 @@ def build_fine_kraken_fasta(name2taxid: dict) -> Path:
                 fout.write(line)
     
     total = stats["resolved_deep"] + stats["fallback"]
-    logger.info("✅ Fine-grained FASTA written: %d / %d resolved below Eukaryota root, %d fallback.",
+    logger.info("Fine-grained FASTA written: %d / %d resolved below Eukaryota root, %d fallback.",
                 stats["resolved_deep"], total, stats["fallback"])
     return OUT_FASTA
 
@@ -137,7 +127,7 @@ def rebuild_kraken2_db():
     if r2.returncode != 0:
         logger.error("kraken2-build failed: %s", r2.stderr)
         return False
-    logger.info("✅ Kraken2 18S index rebuilt!\n%s", r2.stdout[-500:])
+    logger.info("Kraken2 18S index rebuilt!\n%s", r2.stdout[-500:])
     return True
 
 if __name__ == "__main__":

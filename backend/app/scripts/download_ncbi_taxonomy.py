@@ -1,8 +1,4 @@
-"""
-download_ncbi_taxonomy.py
-Downloads and extracts clean NCBI taxdump files (names.dmp, nodes.dmp)
-for building custom Kraken2 databases (18S, COI, 16S).
-"""
+"""Download and extract NCBI taxonomy dump files."""
 import os
 import tarfile
 import urllib.request
@@ -24,9 +20,9 @@ def download_and_extract_taxdump(target_dir: Path):
         logger.info("Extracting taxonomy files into %s...", target_dir)
         with tarfile.open(tar_path, "r:gz") as tar:
             tar.extractall(path=target_dir)
-        logger.info("✅ NCBI taxdump downloaded and extracted successfully.")
+        logger.info("NCBI taxdump downloaded and extracted successfully.")
     else:
-        logger.info("✅ NCBI taxonomy files (names.dmp, nodes.dmp) already present in %s", target_dir)
+        logger.info("NCBI taxonomy files (names.dmp, nodes.dmp) already present in %s", target_dir)
 
 if __name__ == "__main__":
     import os

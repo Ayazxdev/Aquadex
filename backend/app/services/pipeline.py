@@ -38,7 +38,6 @@ def _is_demo_mode() -> bool:
     return settings.DEMO_MODE
 
 
-# ───────────────────────── status helpers ──────────────────────────
 def _write_status(run_id: str, status: str, progress: float = 0.0,
                   message: Optional[str] = None, outputs: dict | None = None):
     entry = {"status": status, "progress": progress, "message": message}
@@ -60,7 +59,6 @@ def get_status(run_id: str) -> dict:
     return _status.get(run_id, {"status": "unknown", "progress": 0.0, "message": None})
 
 
-# ───────────────────────── public entry ────────────────────────────
 def start_pipeline(run_id: str, marker: str, read_type: str, options: dict) -> bool:
     """Launch the pipeline in a background thread. Returns immediately."""
     current = get_status(run_id)
@@ -80,7 +78,6 @@ def start_pipeline(run_id: str, marker: str, read_type: str, options: dict) -> b
     return True
 
 
-# ───────────────────────── REAL pipeline ───────────────────────────
 def _real_runner(run_id: str, marker: str, read_type: str, options: dict):
     """Run the actual bioinformatics pipeline via pipeline_runner."""
     try:
@@ -180,8 +177,6 @@ def _real_runner(run_id: str, marker: str, read_type: str, options: dict):
         _demo_runner(run_id, marker, read_type, options)
 
 
-# ───────────────────────── DEMO pipeline ───────────────────────────
-# ───────────────────────── DEMO pipeline ───────────────────────────
 def _inspect_uploaded_files(inp: Path) -> List[dict]:
     """Analyze all uploaded files to extract real QC stats and sample names."""
     files = sorted(inp.glob("*.*"))
@@ -313,7 +308,7 @@ def _create_demo_outputs(run_id: str, marker: str = "18S", read_type: str = "sho
     low_qual = int(total_reads * 0.035)
     too_short = int(total_reads * 0.015)
 
-    # ── QC ──
+    # QC
     qc_dir = od / "qc"
     qc_dir.mkdir(parents=True, exist_ok=True)
     fastp_json = {
@@ -341,13 +336,13 @@ def _create_demo_outputs(run_id: str, marker: str = "18S", read_type: str = "sho
     }
     (qc_dir / "fastp_report.json").write_text(json.dumps(fastp_json, indent=2))
 
-    # ── Taxonomy (Marker-Specific for N Uploaded Samples) ──
+    # Taxonomy (Marker-Specific for N Uploaded Samples)
     tax_dir = od / "taxonomy"
     tax_dir.mkdir(parents=True, exist_ok=True)
 
     marker_upper = (marker or "18S").upper()
     
-    # ── Taxonomy (Marker-Specific for N Uploaded Samples) ──
+    # Taxonomy (Marker-Specific for N Uploaded Samples)
     tax_dir = od / "taxonomy"
     tax_dir.mkdir(parents=True, exist_ok=True)
 
@@ -403,7 +398,7 @@ def _create_demo_outputs(run_id: str, marker: str = "18S", read_type: str = "sho
         
         (tax_dir / f"{s_name}_taxonomy.tsv").write_text("\n".join(tax_rows))
 
-    # ── Novelty (Dynamic for all uploaded samples) ──
+    # Novelty (Dynamic for all uploaded samples)
     nov_dir = od / "novelty"
     nov_dir.mkdir(parents=True, exist_ok=True)
 
@@ -464,7 +459,7 @@ def _create_demo_outputs(run_id: str, marker: str = "18S", read_type: str = "sho
     (nov_dir / "novelty_report.tsv").write_text("\n".join(nov_rows))
     (nov_dir / "novelty.csv").write_text("\n".join(nov_csv_rows))
 
-    # ── Clustering (UMAP + HDBSCAN style) ──
+    # Clustering (UMAP + HDBSCAN style)
     clust_dir = od / "clustering"
     clust_dir.mkdir(parents=True, exist_ok=True)
     
@@ -483,7 +478,7 @@ def _create_demo_outputs(run_id: str, marker: str = "18S", read_type: str = "sho
         clust_rows.append(f"{asv}\t{cid}\t{x:.4f}\t{y:.4f}\t{novelty_map[asv]}\t{sizes[cid]}\t{tx}\t{ph}")
     (clust_dir / "clusters.tsv").write_text("\n".join(clust_rows))
 
-    # ── Phylogeny (Dynamic Newick for all ASVs) ──
+    # Phylogeny (Dynamic Newick for all ASVs)
     phylo_dir = od / "phylogeny"
     phylo_dir.mkdir(parents=True, exist_ok=True)
     asv_leaves = [f"{asv}:{round(run_rnd.uniform(0.08, 0.22), 3)}" for asv in cluster_map]
@@ -506,18 +501,18 @@ def _create_demo_outputs(run_id: str, marker: str = "18S", read_type: str = "sho
         phylo_rows.append(f"{asv}\t{cluster_map[asv]}\t{novelty_map[asv]}\t768")
     (phylo_dir / "phylogeny_table.tsv").write_text("\n".join(phylo_rows))
 
-    # ── Reports ──
+    # Reports
     rep_dir = od / "reports"
     rep_dir.mkdir(parents=True, exist_ok=True)
     (rep_dir / "reports_summary.tsv").write_text("\n".join(nov_rows))
 
-    # ── Metrics (legacy support) ──
+    # Metrics (legacy support)
     met_dir = od / "metrics"
     met_dir.mkdir(parents=True, exist_ok=True)
     metrics = {"assigned_pct": 87.3, "shannon": 4.2, "simpson": 0.89, "novel_count": 9}
     (met_dir / "metrics.json").write_text(json.dumps(metrics, indent=2))
 
-    # ── Generate summary.json via aggregator ──
+    # Generate summary.json via aggregator
     try:
         import warnings
         with warnings.catch_warnings():
@@ -529,7 +524,7 @@ def _create_demo_outputs(run_id: str, marker: str = "18S", read_type: str = "sho
     except Exception as e:
         logger.warning("Could not generate summary.json (non-fatal): %s", e)
 
-    # ── Write final status.json ──
+    # Write final status.json
     status_data = {
         "status": "completed",
         "outputs": {

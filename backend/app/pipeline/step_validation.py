@@ -1,4 +1,3 @@
-# backend/app/pipeline/step_validation.py
 from pathlib import Path
 from typing import List, Dict, Any
 import hashlib

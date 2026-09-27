@@ -1,8 +1,4 @@
-"""
-Runs at container startup to patch bert_layers.py files.
-Replaces the broken Triton flash-attn import block with a simple None assignment
-so DNABERT-S falls back to standard PyTorch CUDA attention.
-"""
+"""Disable Triton flash-attn import in bert_layers to use standard PyTorch attention."""
 import glob
 import logging
 

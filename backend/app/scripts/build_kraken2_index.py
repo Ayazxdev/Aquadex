@@ -22,7 +22,7 @@ def build_18s_kraken_db():
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode == 0:
-        logger.info("✅ Kraken2 18S database built successfully!")
+        logger.info("Kraken2 18S database built successfully!")
         logger.info(result.stdout[:500])
     else:
         logger.error("Kraken2 build failed: %s", result.stderr)
