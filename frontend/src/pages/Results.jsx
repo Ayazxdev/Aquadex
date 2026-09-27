@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { API_BASE } from "../utils/config";
 import "./Results.css";
 import { ResponsivePie } from "@nivo/pie";
@@ -218,13 +218,8 @@ const Results = ({ currentRunId }) => {
     noveltyDecomp: null,
   });
 
-  // Tooltip overlay state
-  const [plotTooltip, setPlotTooltip] = useState({
-    visible: false,
-    x: 0,
-    y: 0,
-    content: null,
-  });
+  // Tooltip overlay ref (Zero-re-render Direct DOM)
+  const tooltipRef = useRef(null);
 
   const handlePlotHover = (event, type) => {
     if (!event || !event.points || !event.points[0]) return;
@@ -232,79 +227,113 @@ const Results = ({ currentRunId }) => {
     const e = event.event;
     if (!e) return;
 
-    let content = null;
+    let html = "";
     if (type === "umap") {
       const cd = pt.customdata || [];
-      content = (
-        <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "14px", borderBottom: "1px solid #f1f5f9", paddingBottom: "6px" }}>
-            <span style={{ fontWeight: 700, color: "#1e40af", fontSize: "13px" }}>{cd[0] || "ASV"}</span>
-            <span style={{ fontSize: "11px", fontWeight: 600, background: "#eff6ff", border: "1px solid #bfdbfe", padding: "1px 7px", borderRadius: "999px", color: "#1d4ed8" }}>
-              Cluster {cd[3] ?? "0"}
+      html = `
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;border-bottom:1px solid #f1f5f9;padding-bottom:6px;">
+            <span style="font-weight:700;color:#1e40af;font-size:13px;">${cd[0] || "ASV"}</span>
+            <span style="font-size:11px;font-weight:600;background:#eff6ff;border:1px solid #bfdbfe;padding:1px 7px;border-radius:999px;color:#1d4ed8;">
+              Cluster ${cd[3] ?? "0"}
             </span>
           </div>
-          <div style={{ fontSize: "12px" }}>
-            <span style={{ color: "#64748b" }}>Taxon:</span>
-            <strong style={{ color: "#0f172a", marginLeft: "6px" }}>{cd[1] || "Unclassified"}</strong>
+          <div style="font-size:12px;">
+            <span style="color:#64748b;">Taxon:</span>
+            <strong style="color:#0f172a;margin-left:6px;">${cd[1] || "Unclassified"}</strong>
           </div>
-          <div style={{ fontSize: "12px" }}>
-            <span style={{ color: "#64748b" }}>Novelty:</span>
-            <strong style={{ color: "#d97706", marginLeft: "6px" }}>{cd[2] || "0.000"}</strong>
+          <div style="font-size:12px;">
+            <span style="color:#64748b;">Novelty:</span>
+            <strong style="color:#d97706;margin-left:6px;">${cd[2] || "0.000"}</strong>
           </div>
-          <div style={{ fontSize: "12px" }}>
-            <span style={{ color: "#64748b" }}>Coords:</span>
-            <span style={{ color: "#475569", marginLeft: "6px" }}>({Number(pt.x).toFixed(2)}, {Number(pt.y).toFixed(2)})</span>
+          <div style="font-size:12px;">
+            <span style="color:#64748b;">Coords:</span>
+            <span style="color:#475569;margin-left:6px;">(${Number(pt.x).toFixed(2)}, ${Number(pt.y).toFixed(2)})</span>
           </div>
         </div>
-      );
+      `;
     } else if (type === "rarefaction") {
       const sampleName = pt.data?.name?.split(" (")[0] || "Sample";
-      content = (
-        <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-          <div style={{ fontWeight: 700, color: "#1e40af", fontSize: "13px", borderBottom: "1px solid #f1f5f9", paddingBottom: "6px" }}>
-            {sampleName}
+      html = `
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <div style="font-weight:700;color:#1e40af;font-size:13px;border-bottom:1px solid #f1f5f9;padding-bottom:6px;">
+            ${sampleName}
           </div>
-          <div style={{ fontSize: "12px" }}>
-            <span style={{ color: "#64748b" }}>Sequencing Depth:</span>
-            <strong style={{ color: "#0f172a", marginLeft: "6px" }}>{Number(pt.x).toLocaleString()} reads</strong>
+          <div style="font-size:12px;">
+            <span style="color:#64748b;">Sequencing Depth:</span>
+            <strong style="color:#0f172a;margin-left:6px;">${Number(pt.x).toLocaleString()} reads</strong>
           </div>
-          <div style={{ fontSize: "12px" }}>
-            <span style={{ color: "#64748b" }}>Expected Taxa:</span>
-            <strong style={{ color: "#059669", marginLeft: "6px" }}>{Number(pt.y).toFixed(1)}</strong>
+          <div style="font-size:12px;">
+            <span style="color:#64748b;">Expected Taxa:</span>
+            <strong style="color:#059669;margin-left:6px;">${Number(pt.y).toFixed(1)}</strong>
           </div>
         </div>
-      );
+      `;
     } else if (type === "pcoa") {
       const sampleName = pt.text || pt.data?.text?.[pt.pointIndex] || "Sample";
-      content = (
-        <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-          <div style={{ fontWeight: 700, color: "#1e40af", fontSize: "13px", borderBottom: "1px solid #f1f5f9", paddingBottom: "6px" }}>
-            {sampleName}
+      html = `
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <div style="font-weight:700;color:#1e40af;font-size:13px;border-bottom:1px solid #f1f5f9;padding-bottom:6px;">
+            ${sampleName}
           </div>
-          <div style={{ fontSize: "12px" }}>
-            <span style={{ color: "#64748b" }}>PC1:</span>
-            <strong style={{ color: "#0f172a", marginLeft: "6px" }}>{Number(pt.x).toFixed(4)}</strong>
+          <div style="font-size:12px;">
+            <span style="color:#64748b;">PC1:</span>
+            <strong style="color:#0f172a;margin-left:6px;">${Number(pt.x).toFixed(4)}</strong>
           </div>
-          <div style={{ fontSize: "12px" }}>
-            <span style={{ color: "#64748b" }}>PC2:</span>
-            <strong style={{ color: "#0f172a", marginLeft: "6px" }}>{Number(pt.y).toFixed(4)}</strong>
+          <div style="font-size:12px;">
+            <span style="color:#64748b;">PC2:</span>
+            <strong style="color:#0f172a;margin-left:6px;">${Number(pt.y).toFixed(4)}</strong>
           </div>
         </div>
-      );
+      `;
+    } else if (type === "sunburst") {
+      const rawLabel = pt.label || pt.entry || "Taxon";
+      const cleanLabel = String(rawLabel).replace(/^[d|k|p|c|o|f|g|s|i|r]__/, "");
+      const prefixMatch = String(rawLabel).match(/^([d|k|p|c|o|f|g|s|i|r]__)/);
+      const prefix = prefixMatch ? prefixMatch[1] : null;
+      const rankMap = {
+        "d__": "Domain", "k__": "Kingdom", "p__": "Phylum", "c__": "Class",
+        "o__": "Order", "f__": "Family", "g__": "Genus", "s__": "Species",
+        "i__": "Infraorder", "r__": "Supergroup"
+      };
+      const rankName = prefix ? (rankMap[prefix] || "Taxon") : (pt.parent ? "Taxon" : "Root");
+      const parentLabel = pt.parent ? String(pt.parent).replace(/^[d|k|p|c|o|f|g|s|i|r]__/, "") : "";
+      const rawVal = pt.value;
+      const countVal = rawVal != null ? (Number(rawVal) >= 1 ? Math.round(Number(rawVal)).toLocaleString() : Number(rawVal).toFixed(4)) : null;
+      const pctRoot = pt.percentRoot != null ? (pt.percentRoot * 100).toFixed(1) : null;
+      const pctParent = pt.percentParent != null && pt.parent ? (pt.percentParent * 100).toFixed(1) : null;
+
+      html = `
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;border-bottom:1px solid #f1f5f9;padding-bottom:6px;">
+            <span style="font-weight:700;color:#1e40af;font-size:13px;">${cleanLabel}</span>
+            <span style="font-size:11px;font-weight:600;background:#eff6ff;border:1px solid #bfdbfe;padding:1px 7px;border-radius:999px;color:#1d4ed8;">
+              ${rankName}
+            </span>
+          </div>
+          ${parentLabel ? `<div style="font-size:12px;"><span style="color:#64748b;">Parent:</span><span style="color:#475569;margin-left:6px;font-weight:500;">${parentLabel}</span></div>` : ""}
+          ${countVal ? `<div style="font-size:12px;"><span style="color:#64748b;">Abundance:</span><strong style="color:#0f172a;margin-left:6px;">${countVal}</strong></div>` : ""}
+          ${pctRoot ? `<div style="font-size:12px;"><span style="color:#64748b;">Community Share:</span><strong style="color:#059669;margin-left:6px;">${pctRoot}%</strong>${pctParent ? `<span style="color:#94a3b8;margin-left:6px;">(${pctParent}% of clade)</span>` : ""}</div>` : ""}
+        </div>
+      `;
     }
 
-    if (content) {
-      setPlotTooltip({
-        visible: true,
-        x: e.clientX,
-        y: e.clientY,
-        content,
-      });
+    const el = tooltipRef.current;
+    if (el && html) {
+      el.innerHTML = html;
+      const winW = typeof window !== "undefined" ? window.innerWidth : 1200;
+      const left = e.clientX + (e.clientX > winW - 260 ? -240 : 16);
+      const top = e.clientY + (e.clientY < 120 ? 16 : -95);
+      el.style.left = `${left}px`;
+      el.style.top = `${top}px`;
+      el.style.display = "block";
     }
   };
 
   const handlePlotUnhover = () => {
-    setPlotTooltip({ visible: false, x: 0, y: 0, content: null });
+    if (tooltipRef.current) {
+      tooltipRef.current.style.display = "none";
+    }
   };
 
 
@@ -1969,36 +1998,41 @@ const Results = ({ currentRunId }) => {
           {taxViewMode === "sunburst" ? (
             <div style={{ height: 600, minHeight: 600, width: "100%" }}>
               {hasSunburst ? (
-                <Plot
-                  data={[
-                    {
-                      type: "sunburst",
-                      labels: sunburst.labels,
-                      parents: sunburst.parents,
-                      values: sunburst.values,
-                      textinfo: "label",
-                      hovertext: sunburst.text || sunburst.labels,
-                      hoverinfo: "text",
-                      insidetextorientation: "radial",
-                      maxdepth: 4,
-                      marker: {
-                        colorscale: "Viridis",
-                        line: { color: "#ffffff", width: 1.5 }
+                <div className="plotly-custom-hover" style={{ width: "100%", height: "100%" }}>
+                  <Plot
+                    data={[
+                      {
+                        type: "sunburst",
+                        labels: sunburst.labels,
+                        parents: sunburst.parents,
+                        values: sunburst.values,
+                        textinfo: "label",
+                        hoverinfo: "none",
+                        hovertemplate: "",
+                        insidetextorientation: "radial",
+                        maxdepth: 4,
+                        marker: {
+                          colorscale: "Viridis",
+                          line: { color: "#ffffff", width: 1.5 }
+                        }
                       }
-                    }
-                  ]}
-                  layout={{
-                    height: 580,
-                    autosize: true,
-                    margin: { t: 10, r: 10, b: 10, l: 10 },
-                    paper_bgcolor: "transparent",
-                    plot_bgcolor: "transparent",
-                    font: { family: "Inter, sans-serif", color: "#374151", size: 12 }
-                  }}
-                  style={{ width: "100%", height: "100%" }}
-                  config={{ responsive: true, displaylogo: false, toImageButtonOptions: { format: "svg", filename: "taxonomy_sunburst" } }}
-                  useResizeHandler={true}
-                />
+                    ]}
+                    layout={{
+                      height: 580,
+                      autosize: true,
+                      margin: { t: 10, r: 10, b: 10, l: 10 },
+                      paper_bgcolor: "transparent",
+                      plot_bgcolor: "transparent",
+                      font: { family: "Inter, sans-serif", color: "#374151", size: 12 },
+                      uirevision: "sunburst"
+                    }}
+                    style={{ width: "100%", height: "100%" }}
+                    config={{ responsive: true, displaylogo: false, toImageButtonOptions: { format: "svg", filename: "taxonomy_sunburst" } }}
+                    useResizeHandler={true}
+                    onHover={(e) => handlePlotHover(e, "sunburst")}
+                    onUnhover={handlePlotUnhover}
+                  />
+                </div>
               ) : (
                 <div style={{ textAlign: "center", padding: "60px 20px", color: "#9ca3af" }}>
                   No taxonomy hierarchy data available for this run.
@@ -2314,31 +2348,29 @@ const Results = ({ currentRunId }) => {
 
   return (
     <div className="results-page-container">
-      {/* Floating tooltip overlay */}
-      {plotTooltip.visible && (
-        <div
-          style={{
-            position: "fixed",
-            left: `${plotTooltip.x + (plotTooltip.x > (typeof window !== "undefined" ? window.innerWidth : 1200) - 260 ? -240 : 16)}px`,
-            top: `${plotTooltip.y + (plotTooltip.y < 120 ? 16 : -95)}px`,
-            backgroundColor: "rgba(255, 255, 255, 0.98)",
-            border: "1px solid #cbd5e1",
-            color: "#1e293b",
-            padding: "10px 14px",
-            borderRadius: "8px",
-            zIndex: 999999,
-            pointerEvents: "none",
-            boxShadow: "0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 4px 6px -2px rgba(15, 23, 42, 0.05)",
-            fontSize: "12px",
-            lineHeight: "1.5",
-            maxWidth: "340px",
-            backdropFilter: "blur(8px)",
-            whiteSpace: "nowrap"
-          }}
-        >
-          {plotTooltip.content}
-        </div>
-      )}
+      {/* Floating tooltip overlay (Zero-re-render Direct DOM) */}
+      <div
+        ref={tooltipRef}
+        style={{
+          display: "none",
+          position: "fixed",
+          left: 0,
+          top: 0,
+          backgroundColor: "rgba(255, 255, 255, 0.98)",
+          border: "1px solid #cbd5e1",
+          color: "#1e293b",
+          padding: "10px 14px",
+          borderRadius: "8px",
+          zIndex: 999999,
+          pointerEvents: "none",
+          boxShadow: "0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 4px 6px -2px rgba(15, 23, 42, 0.05)",
+          fontSize: "12px",
+          lineHeight: "1.5",
+          maxWidth: "340px",
+          backdropFilter: "blur(8px)",
+          whiteSpace: "nowrap"
+        }}
+      />
       <div className="results-content">
         <div className="results-header">
           <h1 className="results-title">Analysis Results</h1>

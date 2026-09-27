@@ -9,11 +9,20 @@ export default function Header({ currentPage, onNavigate }) {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
+    let scrolled = false;
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+      const scrollY = window.scrollY;
+      // Dual-threshold hysteresis (enter at 60px, exit at 15px) prevents height oscillation vibration
+      if (!scrolled && scrollY > 60) {
+        scrolled = true;
+        setIsScrolled(true);
+      } else if (scrolled && scrollY < 15) {
+        scrolled = false;
+        setIsScrolled(false);
+      }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     
     // Check for existing user session
     const savedUser = localStorage.getItem('currentUser');
