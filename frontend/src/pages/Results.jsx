@@ -2017,40 +2017,36 @@ const Results = ({ currentRunId }) => {
           {taxViewMode === "sunburst" ? (
             <div style={{ height: 600, minHeight: 600, width: "100%" }}>
               {hasSunburst ? (
-                <div className="plotly-custom-hover" style={{ width: "100%", height: "100%" }}>
-                  <Plot
-                    data={[
-                      {
-                        type: "sunburst",
-                        labels: sunburst.labels,
-                        parents: sunburst.parents,
-                        values: safeValues.length > 0 ? safeValues : sunburst.values,
-                        textinfo: "label",
-                        hoverinfo: "none",
-                        hovertemplate: "",
-                        insidetextorientation: "radial",
-                        maxdepth: 4,
-                        marker: {
-                          colorscale: "Viridis",
-                          line: { color: "#ffffff", width: 1.5 }
-                        }
+                <Plot
+                  data={[
+                    {
+                      type: "sunburst",
+                      labels: sunburst.labels,
+                      parents: sunburst.parents,
+                      values: sunburst.values,
+                      textinfo: "label",
+                      hovertemplate: "<b>%{label}</b><br>Abundance: %{value}<br>Community Share: %{percentRoot:.1%}<extra></extra>",
+                      insidetextorientation: "radial",
+                      maxdepth: 4,
+                      marker: {
+                        colorscale: "Viridis",
+                        line: { color: "#ffffff", width: 1.5 }
                       }
-                    ]}
-                    layout={{
-                      height: 580,
-                      autosize: true,
-                      margin: { t: 10, r: 10, b: 10, l: 10 },
-                      paper_bgcolor: "transparent",
-                      plot_bgcolor: "transparent",
-                      font: { family: "Inter, sans-serif", color: "#374151", size: 12 }
-                    }}
-                    style={{ width: "100%", height: "100%" }}
-                    config={{ responsive: true, displaylogo: false, toImageButtonOptions: { format: "svg", filename: "taxonomy_sunburst" } }}
-                    useResizeHandler={true}
-                    onHover={(e) => handlePlotHover(e, "sunburst")}
-                    onUnhover={handlePlotUnhover}
-                  />
-                </div>
+                    }
+                  ]}
+                  layout={{
+                    height: 580,
+                    autosize: true,
+                    margin: { t: 10, r: 10, b: 10, l: 10 },
+                    paper_bgcolor: "transparent",
+                    plot_bgcolor: "transparent",
+                    font: { family: "Inter, sans-serif", color: "#374151", size: 12 },
+                    uirevision: "sunburst"
+                  }}
+                  style={{ width: "100%", height: "100%" }}
+                  config={{ responsive: true, displaylogo: false, toImageButtonOptions: { format: "svg", filename: "taxonomy_sunburst" } }}
+                  useResizeHandler={true}
+                />
               ) : (
                 <div style={{ textAlign: "center", padding: "60px 20px", color: "#9ca3af" }}>
                   No taxonomy hierarchy data available for this run.
