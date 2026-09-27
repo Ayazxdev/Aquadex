@@ -2031,7 +2031,7 @@ const Results = ({ currentRunId }) => {
                         insidetextorientation: "radial",
                         maxdepth: 4,
                         marker: {
-                          colorscale: "Blues",
+                          colorscale: "Viridis",
                           line: { color: "#ffffff", width: 1.5 }
                         }
                       }
