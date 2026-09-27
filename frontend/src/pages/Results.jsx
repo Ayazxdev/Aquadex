@@ -291,6 +291,54 @@ const Results = ({ currentRunId }) => {
           </div>
         </div>
       );
+    } else if (type === "sunburst") {
+      const rawLabel = pt.label || pt.entry || "Taxon";
+      const cleanLabel = String(rawLabel).replace(/^[d|k|p|c|o|f|g|s|i|r]__/, "");
+      const prefixMatch = String(rawLabel).match(/^([d|k|p|c|o|f|g|s|i|r]__)/);
+      const prefix = prefixMatch ? prefixMatch[1] : null;
+      const rankMap = {
+        "d__": "Domain", "k__": "Kingdom", "p__": "Phylum", "c__": "Class",
+        "o__": "Order", "f__": "Family", "g__": "Genus", "s__": "Species",
+        "i__": "Infraorder", "r__": "Supergroup"
+      };
+      const rankName = prefix ? (rankMap[prefix] || "Taxon") : (pt.parent ? "Taxon" : "Root");
+      const parentLabel = pt.parent ? String(pt.parent).replace(/^[d|k|p|c|o|f|g|s|i|r]__/, "") : null;
+      const rawVal = pt.value;
+      const countVal = rawVal != null ? (Number(rawVal) >= 1 ? Math.round(Number(rawVal)).toLocaleString() : Number(rawVal).toFixed(4)) : null;
+      const pctRoot = pt.percentRoot != null ? (pt.percentRoot * 100).toFixed(1) : null;
+      const pctParent = pt.percentParent != null && pt.parent ? (pt.percentParent * 100).toFixed(1) : null;
+
+      content = (
+        <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "14px", borderBottom: "1px solid #f1f5f9", paddingBottom: "6px" }}>
+            <span style={{ fontWeight: 700, color: "#1e40af", fontSize: "13px" }}>{cleanLabel}</span>
+            <span style={{ fontSize: "11px", fontWeight: 600, background: "#eff6ff", border: "1px solid #bfdbfe", padding: "1px 7px", borderRadius: "999px", color: "#1d4ed8" }}>
+              {rankName}
+            </span>
+          </div>
+          {parentLabel && (
+            <div style={{ fontSize: "12px" }}>
+              <span style={{ color: "#64748b" }}>Parent:</span>
+              <span style={{ color: "#475569", marginLeft: "6px", fontWeight: 500 }}>{parentLabel}</span>
+            </div>
+          )}
+          {countVal && (
+            <div style={{ fontSize: "12px" }}>
+              <span style={{ color: "#64748b" }}>Abundance:</span>
+              <strong style={{ color: "#0f172a", marginLeft: "6px" }}>{countVal}</strong>
+            </div>
+          )}
+          {pctRoot && (
+            <div style={{ fontSize: "12px" }}>
+              <span style={{ color: "#64748b" }}>Community Share:</span>
+              <strong style={{ color: "#059669", marginLeft: "6px" }}>{pctRoot}%</strong>
+              {pctParent && (
+                <span style={{ color: "#94a3b8", marginLeft: "6px" }}>({pctParent}% of clade)</span>
+              )}
+            </div>
+          )}
+        </div>
+      );
     }
 
     if (content) {
@@ -1969,36 +2017,40 @@ const Results = ({ currentRunId }) => {
           {taxViewMode === "sunburst" ? (
             <div style={{ height: 600, minHeight: 600, width: "100%" }}>
               {hasSunburst ? (
-                <Plot
-                  data={[
-                    {
-                      type: "sunburst",
-                      labels: sunburst.labels,
-                      parents: sunburst.parents,
-                      values: sunburst.values,
-                      textinfo: "label",
-                      hovertext: sunburst.text || sunburst.labels,
-                      hoverinfo: "text",
-                      insidetextorientation: "radial",
-                      maxdepth: 4,
-                      marker: {
-                        colorscale: "Viridis",
-                        line: { color: "#ffffff", width: 1.5 }
+                <div className="plotly-custom-hover" style={{ width: "100%", height: "100%" }}>
+                  <Plot
+                    data={[
+                      {
+                        type: "sunburst",
+                        labels: sunburst.labels,
+                        parents: sunburst.parents,
+                        values: safeValues.length > 0 ? safeValues : sunburst.values,
+                        textinfo: "label",
+                        hoverinfo: "none",
+                        hovertemplate: "",
+                        insidetextorientation: "radial",
+                        maxdepth: 4,
+                        marker: {
+                          colorscale: "Blues",
+                          line: { color: "#ffffff", width: 1.5 }
+                        }
                       }
-                    }
-                  ]}
-                  layout={{
-                    height: 580,
-                    autosize: true,
-                    margin: { t: 10, r: 10, b: 10, l: 10 },
-                    paper_bgcolor: "transparent",
-                    plot_bgcolor: "transparent",
-                    font: { family: "Inter, sans-serif", color: "#374151", size: 12 }
-                  }}
-                  style={{ width: "100%", height: "100%" }}
-                  config={{ responsive: true, displaylogo: false, toImageButtonOptions: { format: "svg", filename: "taxonomy_sunburst" } }}
-                  useResizeHandler={true}
-                />
+                    ]}
+                    layout={{
+                      height: 580,
+                      autosize: true,
+                      margin: { t: 10, r: 10, b: 10, l: 10 },
+                      paper_bgcolor: "transparent",
+                      plot_bgcolor: "transparent",
+                      font: { family: "Inter, sans-serif", color: "#374151", size: 12 }
+                    }}
+                    style={{ width: "100%", height: "100%" }}
+                    config={{ responsive: true, displaylogo: false, toImageButtonOptions: { format: "svg", filename: "taxonomy_sunburst" } }}
+                    useResizeHandler={true}
+                    onHover={(e) => handlePlotHover(e, "sunburst")}
+                    onUnhover={handlePlotUnhover}
+                  />
+                </div>
               ) : (
                 <div style={{ textAlign: "center", padding: "60px 20px", color: "#9ca3af" }}>
                   No taxonomy hierarchy data available for this run.
