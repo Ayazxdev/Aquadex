@@ -76,3 +76,12 @@ pids
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Presentations & Documents
+*.ppt
+*.pptx
+*.key
+*.doc
+*.docx
+*.pdf
+
