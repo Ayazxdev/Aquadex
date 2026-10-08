@@ -9,6 +9,11 @@ import { ResponsiveSankey } from "@nivo/sankey";
 import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
 import Plot from "react-plotly.js";
 
+const mockAlphaData = [
+  { sample: "sample1", richness: 125, shannon: 3.45, simpson: 0.89 },
+  { sample: "sample2", richness: 148, shannon: 3.78, simpson: 0.93 },
+];
+
 const renderQCPanel = (qcChartData) => {
   if (!qcChartData) {
     return (
@@ -140,7 +145,24 @@ const renderQCPanel = (qcChartData) => {
   );
 };
 
-const Results = ({ currentRunId }) => {
+const Results = ({ currentRunId: propRunId }) => {
+  const [currentRunId, setCurrentRunId] = useState(propRunId || (() => {
+    try {
+      return localStorage.getItem('aquadex_last_run_id') || '';
+    } catch {
+      return '';
+    }
+  })());
+
+  useEffect(() => {
+    if (propRunId) {
+      setCurrentRunId(propRunId);
+      try {
+        localStorage.setItem('aquadex_last_run_id', propRunId);
+      } catch {}
+    }
+  }, [propRunId]);
+
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, [currentRunId]);
@@ -812,7 +834,7 @@ const Results = ({ currentRunId }) => {
         subtitle_q0: "Observed taxa",
         subtitle_q1: "Effective species count",
         subtitle_q2: "Inverse Simpson index",
-        subtitle_j: `Evenness: ${(chosen.pielou_j || 0).toFixed(3)}`,
+        subtitle_j: `Evenness: ${(Number(chosen?.pielou_j) || 0).toFixed(3)}`,
       };
     }
 
@@ -2268,6 +2290,17 @@ const Results = ({ currentRunId }) => {
 
   if (loading) {
     return <div className="results-page-container"><div className="loading-state">Loading...</div></div>;
+  }
+
+  if (error) {
+    return (
+      <div className="results-page-container">
+        <div className="empty-state" style={{ borderColor: "#fca5a5", background: "#fef2f2" }}>
+          <p className="empty-text" style={{ color: "#b91c1c", fontWeight: 600 }}>Error loading results: {error}</p>
+          <button className="btn-primary" style={{ marginTop: 12 }} onClick={loadResults}>Retry</button>
+        </div>
+      </div>
+    );
   }
 
   const tableData = results?.noveltyTable ?? [];

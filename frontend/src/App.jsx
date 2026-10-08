@@ -6,7 +6,22 @@ import Results from './pages/Results';
 
 const App = () => {
   const [currentPage, setCurrentPage] = useState('home');
-  const [currentRunId, setCurrentRunId] = useState('');
+  const [currentRunId, setCurrentRunId] = useState(() => {
+    try {
+      return localStorage.getItem('aquadex_last_run_id') || '';
+    } catch {
+      return '';
+    }
+  });
+
+  const handleSetRunId = (id) => {
+    setCurrentRunId(id);
+    if (id) {
+      try {
+        localStorage.setItem('aquadex_last_run_id', id);
+      } catch {}
+    }
+  };
 
   const navigate = (page) => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
@@ -22,7 +37,7 @@ const App = () => {
       <Header currentPage={currentPage} onNavigate={navigate} />
       <div className="content-container">
         {currentPage === 'home' && <Home onNavigate={navigate} />}
-        {currentPage === 'run' && <Run onNavigate={navigate} setCurrentRunId={setCurrentRunId} />}
+        {currentPage === 'run' && <Run onNavigate={navigate} setCurrentRunId={handleSetRunId} />}
         {currentPage === 'results' && <Results currentRunId={currentRunId} />}
       </div>
     </div>
