@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Home from './pages/Home';
 import Run from './pages/Run';
@@ -9,8 +9,13 @@ const App = () => {
   const [currentRunId, setCurrentRunId] = useState('');
 
   const navigate = (page) => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     setCurrentPage(page);
   };
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [currentPage]);
 
   return (
     <div className="main-container">

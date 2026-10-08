@@ -34,38 +34,40 @@ const renderQCPanel = (qcChartData) => {
             Percentage of reads retained vs removed after QC
           </p>
         </div>
-        <ResponsivePie
-          data={[
-            {
-              id: "retained",
-              label: "Retained",
-              value: qcChartData.retained,
-              color: "#10b981",
-            },
-            {
-              id: "removed",
-              label: "Removed",
-              value: qcChartData.removed,
-              color: "#ef4444",
-            },
-          ]}
-          margin={{ top: 40, right: 80, bottom: 80, left: 80 }}
-          innerRadius={0.5}
-          padAngle={0.7}
-          cornerRadius={3}
-          colors={{ datum: "data.color" }}
-          borderWidth={1}
-          borderColor={{ from: "color", modifiers: [["darker", 0.2]] }}
-          enableArcLinkLabels={true}
-          arcLinkLabelsSkipAngle={10}
-          arcLinkLabelsTextColor="#333333"
-          arcLinkLabelsThickness={2}
-          arcLinkLabelsColor={{ from: "color" }}
-          arcLabelsSkipAngle={10}
-          arcLabelsTextColor="#ffffff"
-          animate={true}
-          motionConfig="gentle"
-        />
+        <div style={{ height: "320px", width: "100%" }}>
+          <ResponsivePie
+            data={[
+              {
+                id: "retained",
+                label: "Retained",
+                value: qcChartData.retained,
+                color: "#10b981",
+              },
+              {
+                id: "removed",
+                label: "Removed",
+                value: qcChartData.removed,
+                color: "#ef4444",
+              },
+            ]}
+            margin={{ top: 30, right: 80, bottom: 60, left: 80 }}
+            innerRadius={0.5}
+            padAngle={0.7}
+            cornerRadius={3}
+            colors={{ datum: "data.color" }}
+            borderWidth={1}
+            borderColor={{ from: "color", modifiers: [["darker", 0.2]] }}
+            enableArcLinkLabels={true}
+            arcLinkLabelsSkipAngle={10}
+            arcLinkLabelsTextColor="#333333"
+            arcLinkLabelsThickness={2}
+            arcLinkLabelsColor={{ from: "color" }}
+            arcLabelsSkipAngle={10}
+            arcLabelsTextColor="#ffffff"
+            animate={true}
+            motionConfig="gentle"
+          />
+        </div>
       </div>
 
       <div className="chart-container">
@@ -75,60 +77,74 @@ const renderQCPanel = (qcChartData) => {
             Q20/Q30 scores and GC content distribution
           </p>
         </div>
-        <ResponsiveBar
-          data={[
-            {
-              metric: "Q20",
-              value: qcChartData.qualityStats.q20,
-              color: "#3b82f6",
-            },
-            {
-              metric: "Q30",
-              value: qcChartData.qualityStats.q30,
-              color: "#6366f1",
-            },
-            {
-              metric: "GC%",
-              value: qcChartData.qualityStats.gc,
-              color: "#8b5cf6",
-            },
-          ]}
-          keys={["value"]}
-          indexBy="metric"
-          margin={{ top: 50, right: 130, bottom: 50, left: 60 }}
-          padding={0.3}
-          colors={{ datum: "data.color" }}
-          borderColor={{ from: "color", modifiers: [["darker", 1.6]] }}
-          axisTop={null}
-          axisRight={null}
-          axisBottom={{
-            tickSize: 5,
-            tickPadding: 5,
-            tickRotation: 0,
-            legend: "Metric",
-            legendPosition: "middle",
-            legendOffset: 32,
-          }}
-          axisLeft={{
-            tickSize: 5,
-            tickPadding: 5,
-            tickRotation: 0,
-            legend: "Percentage",
-            legendPosition: "middle",
-            legendOffset: -40,
-          }}
-          labelSkipWidth={12}
-          labelSkipHeight={12}
-          labelTextColor="#ffffff"
-          animate={true}
-          motionConfig="gentle"
-        />
+        <div style={{ height: "320px", width: "100%" }}>
+          <ResponsiveBar
+            data={[
+              {
+                metric: "Q20",
+                value: qcChartData.qualityStats.q20,
+                color: "#3b82f6",
+              },
+              {
+                metric: "Q30",
+                value: qcChartData.qualityStats.q30,
+                color: "#6366f1",
+              },
+              {
+                metric: "GC%",
+                value: qcChartData.qualityStats.gc,
+                color: "#8b5cf6",
+              },
+            ]}
+            keys={["value"]}
+            indexBy="metric"
+            margin={{ top: 25, right: 30, bottom: 60, left: 60 }}
+            padding={0.35}
+            colors={{ datum: "data.color" }}
+            borderColor={{ from: "color", modifiers: [["darker", 1.6]] }}
+            axisTop={null}
+            axisRight={null}
+            axisBottom={{
+              tickSize: 5,
+              tickPadding: 8,
+              tickRotation: 0,
+              legend: "Metric",
+              legendPosition: "middle",
+              legendOffset: 42,
+            }}
+            axisLeft={{
+              tickSize: 5,
+              tickPadding: 6,
+              tickRotation: 0,
+              legend: "Percentage",
+              legendPosition: "middle",
+              legendOffset: -45,
+            }}
+            theme={{
+              background: "transparent",
+              textColor: "#374151",
+              axis: {
+                ticks: { text: { fill: "#374151", fontSize: 12 } },
+                legend: { text: { fill: "#374151", fontSize: 12, fontWeight: 500 } },
+              },
+            }}
+            labelSkipWidth={12}
+            labelSkipHeight={12}
+            labelTextColor="#ffffff"
+            animate={true}
+            motionConfig="gentle"
+          />
+        </div>
       </div>
     </div>
   );
 };
 
 const Results = ({ currentRunId }) => {
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [currentRunId]);
+
   const [results, setResults] = useState({
     summaryMetrics: [],
     rawSummaryMetrics: {},
